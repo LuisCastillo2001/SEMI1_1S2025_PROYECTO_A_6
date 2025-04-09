@@ -1,0 +1,827 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import './Dashboard.css';
+import Modal from './Modal';
+import logoImage from '../Images/logo.png'; // Import the logo image
+
+// Icons for UI
+const SectionIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 5h20v14H2z"></path>
+    <path d="M2 10h20"></path>
+  </svg>
+);
+
+const FileIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
+);
+
+const ChatbotIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+    <circle cx="8.5" cy="8.5" r="1.5"/>
+    <circle cx="15.5" cy="8.5" r="1.5"/>
+    <path d="M7 13h10"/>
+    <path d="M9 16l3 3 3-3"/>
+  </svg>
+);
+
+const TranslateIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 8l6 6"/>
+    <path d="M4 14l6-6 2 2"/>
+    <path d="M2 5h12"/>
+    <path d="M7 2h1"/>
+    <path d="M22 22l-5-10-5 10"/>
+    <path d="M14 18h6"/>
+  </svg>
+);
+
+function Dashboard() {
+  // Estado de usuario
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
+  
+  // Estado de secciones
+  const [sections, setSections] = useState([]);
+  const [activeSectionId, setActiveSectionId] = useState(null);
+  const [newSection, setNewSection] = useState({ nombre: '', descripcion: '' });
+  const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  
+  // Estado de archivos
+  const [files, setFiles] = useState([]);
+  const [newFile, setNewFile] = useState({ nombre: '', tipo: 'Documento', archivo: null });
+  const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+  const [isViewFileModalOpen, setIsViewFileModalOpen] = useState(false);
+  const [viewingFile, setViewingFile] = useState(null);
+  
+  // Estado del chatbot
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    { sender: 'bot', text: '¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?' }
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  
+  // Estado de herramientas
+  const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false);
+  const [textToTranslate, setTextToTranslate] = useState('');
+  const [translatedText, setTranslatedText] = useState('');
+  const [translateLanguage, setTranslateLanguage] = useState('es');
+  
+  // Estado para OCR
+  const [isOcrResultModalOpen, setIsOcrResultModalOpen] = useState(false);
+  const [ocrResult, setOcrResult] = useState('');
+  
+  // Add state for text scanning
+  const [textScanSuccess, setTextScanSuccess] = useState(false);
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      navigate('/login');
+      return;
+    }
+    
+    const parsedUser = JSON.parse(userData);
+    setUser(parsedUser);
+    
+    // Cargar secciones del usuario
+    fetchSections(parsedUser.id_usuario);
+    setLoading(false);
+  }, [navigate]);
+
+  useEffect(() => {
+    // Cargar archivos de la sección activa cuando cambia
+    if (activeSectionId) {
+      fetchFiles(activeSectionId);
+    } else {
+      setFiles([]);
+    }
+  }, [activeSectionId]);
+
+  const fetchSections = (userId) => {
+    const allSections = JSON.parse(localStorage.getItem("sections") || "[]");
+    const userSections = allSections.filter(section => section.id_usuario === userId);
+    setSections(userSections);
+    
+    // Activar la primera sección si existe y no hay ninguna activa
+    if (userSections.length > 0 && !activeSectionId) {
+      setActiveSectionId(userSections[0].id_seccion);
+    }
+  };
+
+  const fetchFiles = (sectionId) => {
+    const allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    const sectionFiles = allFiles.filter(file => file.id_seccion === sectionId);
+    setFiles(sectionFiles);
+  };
+
+  const handleCreateSection = (e) => {
+    e.preventDefault();
+    if (!newSection.nombre) {
+      setError('Por favor ingresa un nombre para la sección');
+      return;
+    }
+    
+    const allSections = JSON.parse(localStorage.getItem("sections") || "[]");
+    const section = {
+      id_seccion: Date.now(),
+      nombre: newSection.nombre,
+      descripcion: newSection.descripcion || '',
+      fecha_creacion: new Date().toISOString(),
+      id_usuario: user.id_usuario,
+    };
+    
+    allSections.push(section);
+    localStorage.setItem("sections", JSON.stringify(allSections));
+    
+    setNewSection({ nombre: '', descripcion: '' });
+    setIsSectionModalOpen(false);
+    fetchSections(user.id_usuario);
+    setActiveSectionId(section.id_seccion);
+    setSuccess('Sección creada exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleFileSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
+      setError('Por favor completa todos los campos del archivo y selecciona una sección');
+      return;
+    }
+    
+    const fileObj = {
+      id_archivo: Date.now(),
+      nombre: newFile.nombre,
+      tipo: newFile.tipo,
+      id_seccion: activeSectionId,
+      id_usuario: user.id_usuario,
+      fecha_subida: new Date().toISOString(),
+    };
+    
+    // Manejar diferentes tipos de archivos
+    if (newFile.tipo === 'Documento') {
+      fileObj.content = 'Contenido simulado del documento de texto';
+      fileObj.extension = newFile.archivo.name.split('.').pop().toLowerCase();
+    } else if (newFile.tipo === 'PDF') {
+      fileObj.url = URL.createObjectURL(newFile.archivo);
+      fileObj.traducido = false;
+    } else if (newFile.tipo === 'Imagen') {
+      fileObj.url = URL.createObjectURL(newFile.archivo);
+      fileObj.ocr_aplicado = false;
+    }
+    
+    const allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    allFiles.push(fileObj);
+    localStorage.setItem("files", JSON.stringify(allFiles));
+    
+    setNewFile({ nombre: '', tipo: 'Documento', archivo: null });
+    setIsFileModalOpen(false);
+    fetchFiles(activeSectionId);
+    setSuccess('Archivo subido exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleDeleteSection = (sectionId) => {
+    // Eliminar la sección
+    let allSections = JSON.parse(localStorage.getItem("sections") || "[]");
+    allSections = allSections.filter(section => section.id_seccion !== sectionId);
+    localStorage.setItem("sections", JSON.stringify(allSections));
+    
+    // Eliminar archivos asociados a la sección
+    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    allFiles = allFiles.filter(file => file.id_seccion !== sectionId);
+    localStorage.setItem("files", JSON.stringify(allFiles));
+    
+    fetchSections(user.id_usuario);
+    
+    // Si era la sección activa, seleccionar otra o ninguna
+    if (activeSectionId === sectionId) {
+      const remainingSections = allSections.filter(section => section.id_usuario === user.id_usuario);
+      setActiveSectionId(remainingSections.length > 0 ? remainingSections[0].id_seccion : null);
+    }
+    
+    setSuccess('Sección eliminada exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleDeleteFile = (fileId) => {
+    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    allFiles = allFiles.filter(file => file.id_archivo !== fileId);
+    localStorage.setItem("files", JSON.stringify(allFiles));
+    
+    fetchFiles(activeSectionId);
+    setSuccess('Archivo eliminado exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleViewFile = (file) => {
+    setViewingFile(file);
+    setIsViewFileModalOpen(true);
+  };
+
+  // Updated handleFileAction to differentiate between Imagen and PDF OCR:
+const handleFileAction = (file, action) => {
+  let updatedFile = { ...file };
+  
+  if (action === 'translate' && file.tipo === 'PDF') {
+    updatedFile.traducido = true;
+    updatedFile.contenido_traducido = 'Este es el contenido traducido simulado del PDF.';
+    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    const updatedFiles = allFiles.map(f =>
+      f.id_archivo === file.id_archivo ? updatedFile : f
+    );
+    localStorage.setItem("files", JSON.stringify(updatedFiles));
+    fetchFiles(activeSectionId);
+    setSuccess('PDF traducido exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  }
+  else if (action === 'ocr') {
+    // Simulate text extraction for both Imagen and PDF
+    const textoExtraido = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
+    updatedFile.ocr_aplicado = true;
+    updatedFile.texto_extraido = textoExtraido;
+    
+    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
+    const updatedFiles = allFiles.map(f =>
+      f.id_archivo === file.id_archivo ? updatedFile : f
+    );
+    localStorage.setItem("files", JSON.stringify(updatedFiles));
+    fetchFiles(activeSectionId);
+    setViewingFile(updatedFile);
+    setSuccess('Texto extraído exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+    
+    if (file.tipo === 'PDF') {
+      // For PDFs, download a TXT file with extracted text.
+      const blob = new Blob([textoExtraido], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${file.nombre}-ocr.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+};
+
+  const handleScanText = (file) => {
+    // Simulating text scanning process
+    setTimeout(() => {
+      setTextScanSuccess(true);
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setTextScanSuccess(false);
+      }, 3000);
+    }, 1000);
+  };
+
+  const handleChatSubmit = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    
+    // Agregar mensaje del usuario
+    const userMessage = { sender: 'user', text: newMessage };
+    setChatMessages(prev => [...prev, userMessage]);
+    setNewMessage('');
+    
+    // Simular respuesta del bot después de un breve retraso
+    setTimeout(() => {
+      let botResponse;
+      
+      // Detectar comandos especiales
+      if (newMessage.toLowerCase().includes('traducir')) {
+        botResponse = { 
+          sender: 'bot', 
+          text: 'Para traducir texto, puedes usar la herramienta de traducción que se encuentra en la barra lateral.'
+        };
+      } 
+      else if (newMessage.toLowerCase().includes('ocr') || 
+               newMessage.toLowerCase().includes('extraer texto') || 
+               newMessage.toLowerCase().includes('reconocimiento')) {
+        botResponse = { 
+          sender: 'bot', 
+          text: 'Para extraer texto de imágenes, abre el archivo y usa la opción "Extraer texto" disponible directamente en la vista del archivo.'
+        };
+      }
+      else if (newMessage.toLowerCase().includes('pdf') || newMessage.toLowerCase().includes('traducir documento')) {
+        botResponse = { 
+          sender: 'bot', 
+          text: 'Puedes traducir archivos PDF subiendo el documento y usando la opción de traducción desde la vista del archivo.'
+        };
+      }
+      else {
+        // Respuesta genérica
+        const responses = [
+          'Estoy aquí para ayudarte con la gestión de tus archivos y recursos.',
+          '¿Necesitas ayuda con alguna sección o archivo específico?',
+          'Puedes organizar tus archivos en secciones temáticas para una mejor gestión.',
+          'Recuerda que puedes extraer texto de tus imágenes y PDFs usando la opción "Extraer texto" al visualizar el archivo.'
+        ];
+        botResponse = { 
+          sender: 'bot', 
+          text: responses[Math.floor(Math.random() * responses.length)]
+        };
+      }
+      
+      setChatMessages(prev => [...prev, botResponse]);
+    }, 1000);
+  };
+
+  const handleTranslateSubmit = (e) => {
+    e.preventDefault();
+    if (!textToTranslate.trim()) return;
+    
+    // Simular traducción
+    const languages = {
+      'es': 'español',
+      'en': 'inglés',
+      'fr': 'francés',
+      'de': 'alemán'
+    };
+    
+    setTranslatedText(`[Texto traducido al ${languages[translateLanguage]}]: ${textToTranslate}`);
+    setSuccess('Texto traducido exitosamente');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  if (loading && !user) {
+    return <div className="loading">Cargando...</div>;
+  }
+
+  const activeSection = sections.find(section => section.id_seccion === activeSectionId);
+
+  return (
+    <div className="dashboard-container">
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <img src={logoImage} alt="Logo" className="header-logo" />
+            <h2>FILEASSIST</h2>
+          </div>
+          {user && (
+            <div className="sidebar-user">
+              <img src={user.url_foto} alt={user.nombre_usuario} className="user-avatar" />
+              <span>{user.nombre_usuario}</span>
+            </div>
+          )}
+          <button 
+            className="add-sections-button" 
+            onClick={() => setIsSectionModalOpen(true)}
+          >
+            Agregar Secciones
+          </button>
+        </div>
+        
+        <div className="sections-header">
+          <h3>Mis Secciones</h3>
+        </div>
+        
+        <nav className="sidebar-nav">
+          {sections.length === 0 ? (
+            <div className="empty-sections-note">
+              No tienes secciones. ¡Crea una!
+            </div>
+          ) : (
+            sections.map(section => (
+              <button
+                key={section.id_seccion}
+                className={`nav-item ${activeSectionId === section.id_seccion ? 'active' : ''}`}
+                onClick={() => setActiveSectionId(section.id_seccion)}
+              >
+                <SectionIcon />
+                <span className="section-name">{section.nombre}</span>
+              </button>
+            ))
+          )}
+        </nav>
+        
+        <div className="sidebar-tools">
+          <h3>Herramientas</h3>
+          <button className="tool-button" onClick={() => setIsTranslateModalOpen(true)}>
+            <TranslateIcon />
+            <span>Traducir Texto</span>
+          </button>
+          <button className="tool-button" onClick={() => setIsChatOpen(true)}>
+            <ChatbotIcon />
+            <span>Asistente Virtual</span>
+          </button>
+        </div>
+        
+        <div className="sidebar-footer">
+          <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <header className="content-header">
+          <h1>{activeSection ? activeSection.nombre : 'Bienvenido a FILEASSIST'}</h1>
+        </header>
+
+        {activeSection && (
+          <div className="section-actions">
+            <button className="action-button create-button" onClick={() => setIsFileModalOpen(true)}>
+              Subir Archivo
+            </button>
+            <button 
+              className="action-button delete-button" 
+              onClick={() => handleDeleteSection(activeSectionId)}
+            >
+              Eliminar Sección
+            </button>
+          </div>
+        )}
+
+        {success && <div className="success-message">{success}</div>}
+        {error && <div className="error-message">{error}</div>}
+        
+        <div className="content-body">
+          {!activeSection ? (
+            <div className="welcome-screen">
+              <h2>Bienvenido a tu plataforma de gestión de archivos</h2>
+              <p>
+                Organiza tus archivos por temas creando secciones.
+                Utiliza el asistente virtual y nuestras herramientas de traducción y extracción de texto.
+              </p>
+              <button 
+                className="action-button large-button" 
+                onClick={() => setIsSectionModalOpen(true)}
+              >
+                Crear Primera Sección
+              </button>
+            </div>
+          ) : (
+            <>
+              {activeSection.descripcion && (
+                <div className="section-description">
+                  <p>{activeSection.descripcion}</p>
+                </div>
+              )}
+              
+              {files.length === 0 ? (
+                <div className="empty-state">
+                  <h3>No hay archivos en esta sección</h3>
+                  <p>Sube un nuevo archivo para comenzar</p>
+                  <button className="action-button" onClick={() => setIsFileModalOpen(true)}>
+                    Subir Archivo
+                  </button>
+                </div>
+              ) : (
+                <div className="file-grid">
+                  {files.map((file) => (
+                    <div key={file.id_archivo} className="file-card">
+                      <div className="file-card-header">
+                        <h4>{file.nombre}</h4>
+                        <span className="file-type">{file.tipo}</span>
+                      </div>
+                      <div className="file-card-body">
+                        {file.tipo === 'Imagen' && file.url && (
+                          <img 
+                            src={file.url} 
+                            alt={file.nombre} 
+                            className="file-thumbnail" 
+                          />
+                        )}
+                        {file.tipo === 'Documento' && (
+                          <div className="file-doc-icon">
+                            <FileIcon />
+                            <span className="file-extension">{file.extension}</span>
+                          </div>
+                        )}
+                        {file.tipo === 'PDF' && (
+                          <div className="file-pdf-icon">
+                            <FileIcon />
+                            <span className="file-extension">PDF</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="file-card-actions">
+                        <button
+                          className="view-button"
+                          onClick={() => handleViewFile(file)}
+                        >
+                          Ver archivo
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDeleteFile(file.id_archivo)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* Modal para crear nueva sección */}
+      <Modal 
+        isOpen={isSectionModalOpen} 
+        onClose={() => {
+          setIsSectionModalOpen(false); 
+          setError(null);
+        }} 
+        title="Crear Nueva Sección"
+      >
+        <form onSubmit={handleCreateSection} className="section-form">
+          <div className="form-group">
+            <label htmlFor="nombre">Nombre de la Sección</label>
+            <input
+              id="nombre"
+              type="text"
+              value={newSection.nombre}
+              onChange={(e) => setNewSection({...newSection, nombre: e.target.value})}
+              placeholder="Ej: Proyectos, Estudios, Trabajo..."
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="descripcion">Descripción (opcional)</label>
+            <textarea
+              id="descripcion"
+              value={newSection.descripcion}
+              onChange={(e) => setNewSection({...newSection, descripcion: e.target.value})}
+              placeholder="Describe el contenido de esta sección"
+              rows="4"
+            />
+          </div>
+          <div className="form-actions">
+            <button 
+              type="button" 
+              className="cancel-button"
+              onClick={() => {
+                setIsSectionModalOpen(false);
+                setError(null);
+              }}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="submit-button">
+              Crear Sección
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal para subir archivo */}
+      <Modal 
+        isOpen={isFileModalOpen} 
+        onClose={() => {
+          setIsFileModalOpen(false); 
+          setError(null);
+        }} 
+        title="Subir Nuevo Archivo"
+      >
+        <form onSubmit={handleFileSubmit} className="file-form">
+          <div className="form-group">
+            <label htmlFor="nombre">Nombre del archivo</label>
+            <input
+              id="nombre"
+              type="text"
+              value={newFile.nombre}
+              onChange={(e) => setNewFile({...newFile, nombre: e.target.value})}
+              placeholder="Nombre del archivo"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="tipo">Tipo de archivo</label>
+            <select
+              id="tipo"
+              value={newFile.tipo}
+              onChange={(e) => setNewFile({...newFile, tipo: e.target.value})}
+              required
+            >
+              <option value="Documento">Documento de texto</option>
+              <option value="PDF">Archivo PDF</option>
+              <option value="Imagen">Imagen</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="archivo">Archivo</label>
+            <input
+              id="archivo"
+              type="file"
+              onChange={(e) => setNewFile({...newFile, archivo: e.target.files[0]})}
+              accept=".jpg,.jpeg,.png,.txt,.pdf,.doc,.docx"
+              required
+            />
+          </div>
+          <div className="form-actions">
+            <button 
+              type="button" 
+              className="cancel-button"
+              onClick={() => {
+                setIsFileModalOpen(false);
+                setError(null);
+              }}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="submit-button">
+              Subir
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal para ver archivo */}
+      <Modal 
+        isOpen={isViewFileModalOpen} 
+        onClose={() => {
+          setIsViewFileModalOpen(false);
+          setViewingFile(null);
+          setTextScanSuccess(false);
+        }} 
+        title={`Ver Archivo: ${viewingFile?.nombre}`}
+        wide={true}
+      >
+        <div className="file-viewer">
+          {viewingFile?.tipo === 'Documento' && (
+            <div className="documento-viewer">
+              <pre className="file-content">{viewingFile.content}</pre>
+            </div>
+          )}
+          
+          {viewingFile?.tipo === 'Imagen' && (
+            <div className="imagen-viewer">
+              <img 
+                src={viewingFile.url} 
+                alt={viewingFile.nombre} 
+                className="file-image-full" 
+              />
+              <div className="file-actions">
+                <button 
+                  className="file-action-button"
+                  onClick={() => handleFileAction(viewingFile, 'ocr')}
+                >
+                  Escanear Texto
+                </button>
+              </div>
+              {viewingFile.ocr_aplicado && (
+                <div className="ocr-display">
+                  <h4>Texto extraído:</h4>
+                  <pre className="ocr-text">{viewingFile.texto_extraido}</pre>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {viewingFile?.tipo === 'PDF' && (
+            <div className="pdf-viewer">
+              <div className="pdf-placeholder">
+                <p>Vista previa del PDF (simulado)</p>
+              </div>
+              <div className="file-actions">
+                <button 
+                  className="file-action-button"
+                  onClick={() => handleFileAction(viewingFile, 'ocr')}
+                >
+                  Extraer texto (OCR)
+                </button>
+                <button 
+                  className="file-action-button"
+                  onClick={() => handleFileAction(viewingFile, 'translate')}
+                >
+                  Traducir PDF
+                </button>
+              </div>
+              {viewingFile.traducido && (
+                <div className="pdf-translation">
+                  <h4>Contenido traducido:</h4>
+                  <p>{viewingFile.contenido_traducido}</p>
+                </div>
+              )}
+              {viewingFile.ocr_aplicado && (
+                <div className="ocr-display">
+                  <h4>Texto extraído:</h4>
+                  <pre className="ocr-text">{viewingFile.texto_extraido}</pre>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Modal para resultados OCR */}
+      <Modal 
+        isOpen={isOcrResultModalOpen} 
+        onClose={() => setIsOcrResultModalOpen(false)} 
+        title="Texto Extraído (OCR)"
+        wide={true}
+      >
+        <div className="ocr-result-container">
+          <pre className="ocr-result-text">{viewingFile?.texto_extraido || ocrResult}</pre>
+          <div className="form-actions">
+            <button className="action-button" onClick={() => {
+              // Copiar al portapapeles
+              navigator.clipboard.writeText(viewingFile?.texto_extraido || ocrResult);
+              setSuccess('Texto copiado al portapapeles');
+              setTimeout(() => setSuccess(''), 2000);
+            }}>
+              Copiar al portapapeles
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Chatbot */}
+      <div className={`chatbot ${isChatOpen ? 'open' : ''}`}>
+        <div className="chatbot-header">
+          <h3>Asistente Virtual</h3>
+          <button className="close-chat" onClick={() => setIsChatOpen(false)}>×</button>
+        </div>
+        <div className="chatbot-messages">
+          {chatMessages.map((msg, index) => (
+            <div key={index} className={`chat-message ${msg.sender}`}>
+              <div className="message-bubble">{msg.text}</div>
+            </div>
+          ))}
+        </div>
+        <form className="chatbot-input" onSubmit={handleChatSubmit}>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Escribe tu mensaje..."
+          />
+          <button type="submit">Enviar</button>
+        </form>
+      </div>
+
+      {/* Botón flotante para abrir el chat */}
+      {!isChatOpen && (
+        <button className="chat-fab" onClick={() => setIsChatOpen(true)}>
+          <ChatbotIcon />
+        </button>
+      )}
+
+      {/* Modal para traducción */}
+      <Modal 
+        isOpen={isTranslateModalOpen} 
+        onClose={() => setIsTranslateModalOpen(false)} 
+        title="Traducir Texto"
+      >
+        <form onSubmit={handleTranslateSubmit} className="translate-form">
+          <div className="form-group">
+            <label htmlFor="texto-original">Texto Original</label>
+            <textarea
+              id="texto-original"
+              value={textToTranslate}
+              onChange={(e) => setTextToTranslate(e.target.value)}
+              placeholder="Ingresa el texto que deseas traducir"
+              rows="5"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="idioma">Traducir a</label>
+            <select
+              id="idioma"
+              value={translateLanguage}
+              onChange={(e) => setTranslateLanguage(e.target.value)}
+            >
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+            </select>
+          </div>
+          <button type="submit" className="submit-button">
+            Traducir
+          </button>
+
+          {translatedText && (
+            <div className="translation-result">
+              <h4>Resultado:</h4>
+              <p>{translatedText}</p>
+            </div>
+          )}
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+export default Dashboard;
