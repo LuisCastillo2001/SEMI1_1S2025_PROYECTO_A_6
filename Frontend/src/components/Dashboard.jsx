@@ -58,7 +58,7 @@ function Dashboard() {
   
   // Estado de archivos
   const [files, setFiles] = useState([]);
-  const [newFile, setNewFile] = useState({ nombre: '', tipo: 'Documento', archivo: null });
+  const [newFile, setNewFile] = useState({ nombre: '', tipo: 'PDF', archivo: null });
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isViewFileModalOpen, setIsViewFileModalOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState(null);
@@ -96,7 +96,7 @@ function Dashboard() {
     setUser(parsedUser);
     
     // Cargar secciones del usuario
-    fetchSections(parsedUser.id_usuario);
+    obtenerSecciones(parsedUser.id_usuario);
     setLoading(false);
   }, [navigate]);
 
@@ -109,171 +109,146 @@ function Dashboard() {
     }
   }, [activeSectionId]);
 
-  const fetchSections = (userId) => {
-    const allSections = JSON.parse(localStorage.getItem("sections") || "[]");
-    const userSections = allSections.filter(section => section.id_usuario === userId);
-    setSections(userSections);
-    
-    // Activar la primera sección si existe y no hay ninguna activa
-    if (userSections.length > 0 && !activeSectionId) {
-      setActiveSectionId(userSections[0].id_seccion);
+  // Reemplazar fetchSections para usar GET desde la API y filtrar por usuario
+const obtenerSecciones = async (idUsuario) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/obtener_secciones_por_usuario/${idUsuario}`);
+    const data = await res.json();
+    setSections(data);
+    if (data.length > 0 && !activeSectionId) {
+      setActiveSectionId(data[0].id_seccion);
     }
-  };
+  } catch (error) {
+    setError(error.message);
+  }
+};
 
-  const fetchFiles = (sectionId) => {
-    const allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    const sectionFiles = allFiles.filter(file => file.id_seccion === sectionId);
-    setFiles(sectionFiles);
-  };
-
-  const handleCreateSection = (e) => {
-    e.preventDefault();
-    if (!newSection.nombre) {
-      setError('Por favor ingresa un nombre para la sección');
-      return;
-    }
-    
-    const allSections = JSON.parse(localStorage.getItem("sections") || "[]");
-    const section = {
-      id_seccion: Date.now(),
-      nombre: newSection.nombre,
-      descripcion: newSection.descripcion || '',
-      fecha_creacion: new Date().toISOString(),
-      id_usuario: user.id_usuario,
-    };
-    
-    allSections.push(section);
-    localStorage.setItem("sections", JSON.stringify(allSections));
-    
+// Actualizar creación de sección usando API
+const registrarSeccion = async (e) => {
+  e.preventDefault();
+  if (!newSection.nombre) {
+    setError('Por favor ingresa un nombre para la sección');
+    return;
+  }
+  try {
+    await fetch('http://localhost:3000/api/registrar_seccion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo_seccion: newSection.nombre,
+        descripcion_seccion: newSection.descripcion,
+        id_usuario: user.id_usuario
+      })
+    });
     setNewSection({ nombre: '', descripcion: '' });
     setIsSectionModalOpen(false);
-    fetchSections(user.id_usuario);
-    setActiveSectionId(section.id_seccion);
+    obtenerSecciones(user.id_usuario);
     setSuccess('Sección creada exitosamente');
     setTimeout(() => setSuccess(''), 3000);
-  };
+  } catch (error) {
+    setError(error.message);
+  }
+};
 
-  const handleFileSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
-      setError('Por favor completa todos los campos del archivo y selecciona una sección');
-      return;
-    }
-    
-    const fileObj = {
-      id_archivo: Date.now(),
-      nombre: newFile.nombre,
-      tipo: newFile.tipo,
-      id_seccion: activeSectionId,
-      id_usuario: user.id_usuario,
-      fecha_subida: new Date().toISOString(),
-    };
-    
-    // Manejar diferentes tipos de archivos
-    if (newFile.tipo === 'Documento') {
-      fileObj.content = 'Contenido simulado del documento de texto';
-      fileObj.extension = newFile.archivo.name.split('.').pop().toLowerCase();
-    } else if (newFile.tipo === 'PDF') {
-      fileObj.url = URL.createObjectURL(newFile.archivo);
-      fileObj.traducido = false;
-    } else if (newFile.tipo === 'Imagen') {
-      fileObj.url = URL.createObjectURL(newFile.archivo);
-      fileObj.ocr_aplicado = false;
-    }
-    
-    const allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    allFiles.push(fileObj);
-    localStorage.setItem("files", JSON.stringify(allFiles));
-    
-    setNewFile({ nombre: '', tipo: 'Documento', archivo: null });
-    setIsFileModalOpen(false);
+// Usar endpoint para obtener archivos de una sección
+const fetchFiles = async (sectionId) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/obtener_archivos_seccion/${sectionId}`);
+    const data = await res.json();
+    setFiles(data);
+  } catch (error) {
+    setError(error.message);
+  }
+};
+
+// Actualizar subida de archivo usando FormData y endpoint
+const handleFileSubmit = async (e) => {
+  e.preventDefault();
+  if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
+    setError('Por favor completa todos los campos y selecciona una sección');
+    return;
+  }
+  const formDataToSend = new FormData();
+  formDataToSend.append('nombre_archivo', newFile.nombre);
+  formDataToSend.append('tipo', newFile.tipo);
+  formDataToSend.append('id_seccion', activeSectionId);
+  formDataToSend.append('archivo', newFile.archivo);
+  try {
+    await fetch('http://localhost:3000/api/registrar_archivo', {
+      method: 'POST',
+      body: formDataToSend
+    });
     fetchFiles(activeSectionId);
+    setIsFileModalOpen(false);
     setSuccess('Archivo subido exitosamente');
     setTimeout(() => setSuccess(''), 3000);
-  };
+  } catch (error) {
+    setError(error.message);
+  }
+};
 
-  const handleDeleteSection = (sectionId) => {
-    // Eliminar la sección
-    let allSections = JSON.parse(localStorage.getItem("sections") || "[]");
-    allSections = allSections.filter(section => section.id_seccion !== sectionId);
-    localStorage.setItem("sections", JSON.stringify(allSections));
-    
-    // Eliminar archivos asociados a la sección
-    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    allFiles = allFiles.filter(file => file.id_seccion !== sectionId);
-    localStorage.setItem("files", JSON.stringify(allFiles));
-    
-    fetchSections(user.id_usuario);
-    
-    // Si era la sección activa, seleccionar otra o ninguna
-    if (activeSectionId === sectionId) {
-      const remainingSections = allSections.filter(section => section.id_usuario === user.id_usuario);
-      setActiveSectionId(remainingSections.length > 0 ? remainingSections[0].id_seccion : null);
-    }
-    
-    setSuccess('Sección eliminada exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  const handleDeleteFile = (fileId) => {
-    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    allFiles = allFiles.filter(file => file.id_archivo !== fileId);
-    localStorage.setItem("files", JSON.stringify(allFiles));
-    
-    fetchFiles(activeSectionId);
-    setSuccess('Archivo eliminado exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  const handleViewFile = (file) => {
-    setViewingFile(file);
-    setIsViewFileModalOpen(true);
-  };
-
-  // Updated handleFileAction to differentiate between Imagen and PDF OCR:
-const handleFileAction = (file, action) => {
+// Actualizar acción de OCR y traducción usando PUT
+const handleFileAction = async (file, action) => {
   let updatedFile = { ...file };
-  
   if (action === 'translate' && file.tipo === 'PDF') {
     updatedFile.traducido = true;
     updatedFile.contenido_traducido = 'Este es el contenido traducido simulado del PDF.';
-    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    const updatedFiles = allFiles.map(f =>
-      f.id_archivo === file.id_archivo ? updatedFile : f
-    );
-    localStorage.setItem("files", JSON.stringify(updatedFiles));
-    fetchFiles(activeSectionId);
-    setSuccess('PDF traducido exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  }
-  else if (action === 'ocr') {
-    // Simulate text extraction for both Imagen and PDF
+    try {
+      await fetch(`http://localhost:3000/api/files/translate/${file.id_archivo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto_traducido: updatedFile.contenido_traducido })
+      });
+      setSuccess('PDF traducido exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+      fetchFiles(activeSectionId);
+    } catch (error) {
+      setError(error.message);
+    }
+  } else if (action === 'ocr') {
     const textoExtraido = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
     updatedFile.ocr_aplicado = true;
     updatedFile.texto_extraido = textoExtraido;
-    
-    let allFiles = JSON.parse(localStorage.getItem("files") || "[]");
-    const updatedFiles = allFiles.map(f =>
-      f.id_archivo === file.id_archivo ? updatedFile : f
-    );
-    localStorage.setItem("files", JSON.stringify(updatedFiles));
-    fetchFiles(activeSectionId);
-    setViewingFile(updatedFile);
-    setSuccess('Texto extraído exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-    
-    if (file.tipo === 'PDF') {
-      // For PDFs, download a TXT file with extracted text.
-      const blob = new Blob([textoExtraido], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${file.nombre}-ocr.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
+    try {
+      await fetch(`http://localhost:3000/api/files/ocr/${file.id_archivo}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto_escaneado: textoExtraido })
+      });
+      setSuccess('Texto extraído exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+      fetchFiles(activeSectionId);
+      setViewingFile(updatedFile);
+      if (file.tipo === 'PDF') {
+        const blob = new Blob([textoExtraido], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${file.nombre}-ocr.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      setError(error.message);
     }
   }
+};
+
+const handleDeleteSection = async (sectionId) => {
+  setError('La funcionalidad para eliminar secciones no está disponible.');
+};
+
+const handleDeleteFile = async (fileId) => {
+  setError('La funcionalidad para eliminar archivos no está disponible.');
+};
+
+const handleViewFile = (file) => {
+  setViewingFile(file);
+  setIsViewFileModalOpen(true); // Open the modal for both PDFs and images
+};
+
+const handleConvertToText = (file) => {
+  alert(`Convirtiendo a texto un archivo de tipo: ${file.tipo}`);
 };
 
   const handleScanText = (file) => {
@@ -378,7 +353,12 @@ const handleFileAction = (file, action) => {
           </div>
           {user && (
             <div className="sidebar-user">
-              <img src={user.url_foto} alt={user.nombre_usuario} className="user-avatar" />
+              <img 
+                src={user.url_foto} 
+                alt={user.nombre_usuario} 
+                className="user-avatar" 
+                onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} // Fallback image
+              />
               <span>{user.nombre_usuario}</span>
             </div>
           )}
@@ -400,14 +380,14 @@ const handleFileAction = (file, action) => {
               No tienes secciones. ¡Crea una!
             </div>
           ) : (
-            sections.map(section => (
+            sections.map((section) => (
               <button
                 key={section.id_seccion}
                 className={`nav-item ${activeSectionId === section.id_seccion ? 'active' : ''}`}
                 onClick={() => setActiveSectionId(section.id_seccion)}
               >
                 <SectionIcon />
-                <span className="section-name">{section.nombre}</span>
+                <span className="section-name">{section.titulo_seccion}</span>
               </button>
             ))
           )}
@@ -432,19 +412,13 @@ const handleFileAction = (file, action) => {
 
       <main className="main-content">
         <header className="content-header">
-          <h1>{activeSection ? activeSection.nombre : 'Bienvenido a FILEASSIST'}</h1>
+          <h1>{activeSection ? activeSection.titulo_seccion : 'Bienvenido a FILEASSIST'}</h1>
         </header>
 
         {activeSection && (
           <div className="section-actions">
             <button className="action-button create-button" onClick={() => setIsFileModalOpen(true)}>
               Subir Archivo
-            </button>
-            <button 
-              className="action-button delete-button" 
-              onClick={() => handleDeleteSection(activeSectionId)}
-            >
-              Eliminar Sección
             </button>
           </div>
         )}
@@ -453,84 +427,45 @@ const handleFileAction = (file, action) => {
         {error && <div className="error-message">{error}</div>}
         
         <div className="content-body">
-          {!activeSection ? (
-            <div className="welcome-screen">
-              <h2>Bienvenido a tu plataforma de gestión de archivos</h2>
-              <p>
-                Organiza tus archivos por temas creando secciones.
-                Utiliza el asistente virtual y nuestras herramientas de traducción y extracción de texto.
-              </p>
-              <button 
-                className="action-button large-button" 
-                onClick={() => setIsSectionModalOpen(true)}
-              >
-                Crear Primera Sección
+          {files.length === 0 ? (
+            <div className="empty-state">
+              <h3>No hay archivos en esta sección</h3>
+              <p>Sube un nuevo archivo para comenzar</p>
+              <button className="action-button" onClick={() => setIsFileModalOpen(true)}>
+                Subir Archivo
               </button>
             </div>
           ) : (
-            <>
-              {activeSection.descripcion && (
-                <div className="section-description">
-                  <p>{activeSection.descripcion}</p>
-                </div>
-              )}
-              
-              {files.length === 0 ? (
-                <div className="empty-state">
-                  <h3>No hay archivos en esta sección</h3>
-                  <p>Sube un nuevo archivo para comenzar</p>
-                  <button className="action-button" onClick={() => setIsFileModalOpen(true)}>
-                    Subir Archivo
-                  </button>
-                </div>
-              ) : (
-                <div className="file-grid">
-                  {files.map((file) => (
-                    <div key={file.id_archivo} className="file-card">
-                      <div className="file-card-header">
-                        <h4>{file.nombre}</h4>
-                        <span className="file-type">{file.tipo}</span>
+            <div className="file-grid">
+              {files.map((file) => (
+                <div key={file.id_archivo} className="file-card">
+                  <div className="file-card-header">
+                    <h4>{file.nombre_archivo}</h4>
+                    <span className="file-type">{file.tipo}</span>
+                  </div>
+                  <div className="file-card-body">
+                    {file.tipo === 'Pdf' && (
+                      <div className="file-pdf-icon">
+                        <FileIcon />
+                        <span className="file-extension">PDF</span>
                       </div>
-                      <div className="file-card-body">
-                        {file.tipo === 'Imagen' && file.url && (
-                          <img 
-                            src={file.url} 
-                            alt={file.nombre} 
-                            className="file-thumbnail" 
-                          />
-                        )}
-                        {file.tipo === 'Documento' && (
-                          <div className="file-doc-icon">
-                            <FileIcon />
-                            <span className="file-extension">{file.extension}</span>
-                          </div>
-                        )}
-                        {file.tipo === 'PDF' && (
-                          <div className="file-pdf-icon">
-                            <FileIcon />
-                            <span className="file-extension">PDF</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="file-card-actions">
-                        <button
-                          className="view-button"
-                          onClick={() => handleViewFile(file)}
-                        >
-                          Ver archivo
-                        </button>
-                        <button
-                          className="delete-button"
-                          onClick={() => handleDeleteFile(file.id_archivo)}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )}
+                    {file.tipo === 'Imagen' && (
+                      <img
+                        src={file.url_archivo}
+                        alt={file.nombre_archivo}
+                        className="file-thumbnail"
+                      />
+                    )}
+                  </div>
+                  <div className="file-card-actions">
+                    <button className="view-button" onClick={() => handleViewFile(file)}>
+                      Ver archivo
+                    </button>
+                  </div>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
       </main>
@@ -544,7 +479,7 @@ const handleFileAction = (file, action) => {
         }} 
         title="Crear Nueva Sección"
       >
-        <form onSubmit={handleCreateSection} className="section-form">
+        <form onSubmit={registrarSeccion} className="section-form">
           <div className="form-group">
             <label htmlFor="nombre">Nombre de la Sección</label>
             <input
@@ -613,7 +548,6 @@ const handleFileAction = (file, action) => {
               onChange={(e) => setNewFile({...newFile, tipo: e.target.value})}
               required
             >
-              <option value="Documento">Documento de texto</option>
               <option value="PDF">Archivo PDF</option>
               <option value="Imagen">Imagen</option>
             </select>
@@ -624,7 +558,7 @@ const handleFileAction = (file, action) => {
               id="archivo"
               type="file"
               onChange={(e) => setNewFile({...newFile, archivo: e.target.files[0]})}
-              accept=".jpg,.jpeg,.png,.txt,.pdf,.doc,.docx"
+              accept=".jpg,.jpeg,.png,.pdf"
               required
             />
           </div>
@@ -647,79 +581,46 @@ const handleFileAction = (file, action) => {
       </Modal>
 
       {/* Modal para ver archivo */}
-      <Modal 
-        isOpen={isViewFileModalOpen} 
+      <Modal
+        isOpen={isViewFileModalOpen}
         onClose={() => {
           setIsViewFileModalOpen(false);
           setViewingFile(null);
-          setTextScanSuccess(false);
-        }} 
-        title={`Ver Archivo: ${viewingFile?.nombre}`}
+        }}
+        title={`Ver Archivo: ${viewingFile?.nombre_archivo}`}
         wide={true}
       >
         <div className="file-viewer">
-          {viewingFile?.tipo === 'Documento' && (
-            <div className="documento-viewer">
-              <pre className="file-content">{viewingFile.content}</pre>
-            </div>
+          {viewingFile?.tipo === 'Pdf' && (
+            <>
+              <iframe
+                src={`http://localhost:3000/api/ver_pdf/${viewingFile.id_archivo}`}
+                title={viewingFile.nombre_archivo}
+                style={{ width: '100%', height: '80vh', border: 'none' }}
+              ></iframe>
+              <button
+                className="action-button"
+                onClick={() => handleConvertToText(viewingFile)}
+              >
+                Convertir a Texto
+              </button>
+            </>
           )}
-          
           {viewingFile?.tipo === 'Imagen' && (
-            <div className="imagen-viewer">
-              <img 
-                src={viewingFile.url} 
-                alt={viewingFile.nombre} 
-                className="file-image-full" 
+            <>
+              <img
+                src={viewingFile.url_archivo}
+                alt={viewingFile.nombre_archivo}
+                className="image-full"
+                style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
               />
-              <div className="file-actions">
-                <button 
-                  className="file-action-button"
-                  onClick={() => handleFileAction(viewingFile, 'ocr')}
-                >
-                  Escanear Texto
-                </button>
-              </div>
-              {viewingFile.ocr_aplicado && (
-                <div className="ocr-display">
-                  <h4>Texto extraído:</h4>
-                  <pre className="ocr-text">{viewingFile.texto_extraido}</pre>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {viewingFile?.tipo === 'PDF' && (
-            <div className="pdf-viewer">
-              <div className="pdf-placeholder">
-                <p>Vista previa del PDF (simulado)</p>
-              </div>
-              <div className="file-actions">
-                <button 
-                  className="file-action-button"
-                  onClick={() => handleFileAction(viewingFile, 'ocr')}
-                >
-                  Extraer texto (OCR)
-                </button>
-                <button 
-                  className="file-action-button"
-                  onClick={() => handleFileAction(viewingFile, 'translate')}
-                >
-                  Traducir PDF
-                </button>
-              </div>
-              {viewingFile.traducido && (
-                <div className="pdf-translation">
-                  <h4>Contenido traducido:</h4>
-                  <p>{viewingFile.contenido_traducido}</p>
-                </div>
-              )}
-              {viewingFile.ocr_aplicado && (
-                <div className="ocr-display">
-                  <h4>Texto extraído:</h4>
-                  <pre className="ocr-text">{viewingFile.texto_extraido}</pre>
-                </div>
-              )}
-            </div>
+              <button
+                className="action-button"
+                onClick={() => handleConvertToText(viewingFile)}
+              >
+                Convertir a Texto
+              </button>
+            </>
           )}
         </div>
       </Modal>

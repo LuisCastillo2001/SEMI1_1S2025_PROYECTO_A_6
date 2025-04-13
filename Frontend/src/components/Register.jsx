@@ -27,19 +27,28 @@ function Register() {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Se elimina la llamada fetch y se almacena el usuario en localStorage
-    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    const newUser = {
-      id_usuario: Date.now(),
-      nombre_usuario: formData.nombre_usuario,
-      correo: formData.correo,
-      contrasenia: formData.contrasenia,
-      url_foto: formData.foto ? URL.createObjectURL(formData.foto) : '',
-    };
-    existingUsers.push(newUser);
-    localStorage.setItem("users", JSON.stringify(existingUsers));
-    setMessage('Registro exitoso');
-    setTimeout(() => navigate('/login'), 2000);
+    const formDataToSend = new FormData();
+    formDataToSend.append('nombre_usuario', formData.nombre_usuario);
+    formDataToSend.append('correo', formData.correo);
+    formDataToSend.append('contrasenia', formData.contrasenia);
+    if (formData.foto) {
+      formDataToSend.append('foto', formData.foto);
+    }
+    try {
+      const response = await fetch('http://localhost:3000/api/registrar_usuario', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Registro exitoso');
+        setTimeout(() => navigate('/login'), 2000);
+      } else {
+        setMessage(data.error || 'Error al registrar usuario');
+      }
+    } catch (error) {
+      setMessage(error.message);
+    }
   };
   
   return (
