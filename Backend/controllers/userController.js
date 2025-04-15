@@ -200,3 +200,24 @@ export const visualizarPDF = async (req, res) => {
         }
     });
 };
+
+export const translateText = async (req, res) => {
+    const { text, source_language, target_language } = req.body;
+
+    try {
+        const response = await fetch('https://4d7varhp9c.execute-api.us-east-1.amazonaws.com/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, source_language, target_language }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al traducir el texto');
+        }
+
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

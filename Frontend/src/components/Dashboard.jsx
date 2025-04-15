@@ -75,6 +75,7 @@ function Dashboard() {
   const [textToTranslate, setTextToTranslate] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [translateLanguage, setTranslateLanguage] = useState('es');
+  const [sourceLanguage, setSourceLanguage] = useState('es');
   
   // Estado para OCR
   const [isOcrResultModalOpen, setIsOcrResultModalOpen] = useState(false);
@@ -315,22 +316,34 @@ const handleConvertToText = (file) => {
     }, 1000);
   };
 
-  const handleTranslateSubmit = (e) => {
-    e.preventDefault();
-    if (!textToTranslate.trim()) return;
-    
-    // Simular traducción
-    const languages = {
-      'es': 'español',
-      'en': 'inglés',
-      'fr': 'francés',
-      'de': 'alemán'
-    };
-    
-    setTranslatedText(`[Texto traducido al ${languages[translateLanguage]}]: ${textToTranslate}`);
+const handleTranslateSubmit = async (e) => {
+  e.preventDefault();
+  if (!textToTranslate.trim()) return;
+
+  try {
+    const response = await fetch('http://localhost:3000/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: textToTranslate,
+        source_language: sourceLanguage,
+        target_language: translateLanguage,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al traducir el texto');
+    }
+
+    const data = await response.json();
+    setTranslatedText(data.texto_traducido);
     setSuccess('Texto traducido exitosamente');
     setTimeout(() => setSuccess(''), 3000);
-  };
+  } catch (error) {
+    setError(error.message);
+    setTimeout(() => setError(''), 3000);
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -686,6 +699,19 @@ const handleConvertToText = (file) => {
       >
         <form onSubmit={handleTranslateSubmit} className="translate-form">
           <div className="form-group">
+            <label htmlFor="idioma-origen">Idioma Original</label>
+            <select
+              id="idioma-origen"
+              value={sourceLanguage}
+              onChange={(e) => setSourceLanguage(e.target.value)}
+            >
+              <option value="es">Español</option>
+              <option value="en">Inglés</option>
+              <option value="fr">Francés</option>
+              <option value="de">Alemán</option>
+            </select>
+          </div>
+          <div className="form-group">
             <label htmlFor="texto-original">Texto Original</label>
             <textarea
               id="texto-original"
@@ -703,8 +729,8 @@ const handleConvertToText = (file) => {
               value={translateLanguage}
               onChange={(e) => setTranslateLanguage(e.target.value)}
             >
-              <option value="es">Español</option>
               <option value="en">Inglés</option>
+              <option value="es">Español</option>
               <option value="fr">Francés</option>
               <option value="de">Alemán</option>
             </select>

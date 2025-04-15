@@ -10,7 +10,8 @@ import {
   actualizarTextoTraducido,
   visualizarArchivo,
   visualizarPDF,
-  upload
+  upload,
+  translateText
 } from '../controllers/userController.js';
 
 const router = Router();
@@ -25,5 +26,6 @@ router.put('/actualizar_texto_escaneado/:id_archivo', actualizarTextoEscaneado);
 router.put('/actualizar_texto_traducido/:id_archivo', actualizarTextoTraducido);
 router.get('/visualizar_archivo/:id_archivo', visualizarArchivo);
 router.get('/ver_pdf/:id_archivo', visualizarPDF);
+router.post('/translate', translateText);
 
 export default router;
