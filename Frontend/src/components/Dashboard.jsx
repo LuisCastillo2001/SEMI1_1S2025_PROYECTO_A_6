@@ -14,32 +14,32 @@ const SectionIcon = () => (
 
 const FileIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
-    <line x1="16" y1="13" x2="8" y2="13"/>
-    <line x1="16" y1="17" x2="8" y2="17"/>
-    <polyline points="10 9 9 9 8 9"/>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
   </svg>
 );
 
 const ChatbotIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-    <circle cx="8.5" cy="8.5" r="1.5"/>
-    <circle cx="15.5" cy="8.5" r="1.5"/>
-    <path d="M7 13h10"/>
-    <path d="M9 16l3 3 3-3"/>
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+    <circle cx="8.5" cy="8.5" r="1.5" />
+    <circle cx="15.5" cy="8.5" r="1.5" />
+    <path d="M7 13h10" />
+    <path d="M9 16l3 3 3-3" />
   </svg>
 );
 
 const TranslateIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 8l6 6"/>
-    <path d="M4 14l6-6 2 2"/>
-    <path d="M2 5h12"/>
-    <path d="M7 2h1"/>
-    <path d="M22 22l-5-10-5 10"/>
-    <path d="M14 18h6"/>
+    <path d="M5 8l6 6" />
+    <path d="M4 14l6-6 2 2" />
+    <path d="M2 5h12" />
+    <path d="M7 2h1" />
+    <path d="M22 22l-5-10-5 10" />
+    <path d="M14 18h6" />
   </svg>
 );
 
@@ -49,41 +49,41 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
-  
+
   // Estado de secciones
   const [sections, setSections] = useState([]);
   const [activeSectionId, setActiveSectionId] = useState(null);
   const [newSection, setNewSection] = useState({ nombre: '', descripcion: '' });
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
-  
+
   // Estado de archivos
   const [files, setFiles] = useState([]);
   const [newFile, setNewFile] = useState({ nombre: '', tipo: 'PDF', archivo: null });
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isViewFileModalOpen, setIsViewFileModalOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState(null);
-  
+
   // Estado del chatbot
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
     { sender: 'bot', text: '¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?' }
   ]);
   const [newMessage, setNewMessage] = useState('');
-  
+
   // Estado de herramientas
   const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false);
   const [textToTranslate, setTextToTranslate] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [translateLanguage, setTranslateLanguage] = useState('es');
   const [sourceLanguage, setSourceLanguage] = useState('es');
-  
+
   // Estado para OCR
   const [isOcrResultModalOpen, setIsOcrResultModalOpen] = useState(false);
   const [ocrResult, setOcrResult] = useState('');
-  
+
   // Add state for text scanning
   const [textScanSuccess, setTextScanSuccess] = useState(false);
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,10 +92,10 @@ function Dashboard() {
       navigate('/login');
       return;
     }
-    
+
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);
-    
+
     // Cargar secciones del usuario
     obtenerSecciones(parsedUser.id_usuario);
     setLoading(false);
@@ -111,152 +111,152 @@ function Dashboard() {
   }, [activeSectionId]);
 
   // Reemplazar fetchSections para usar GET desde la API y filtrar por usuario
-const obtenerSecciones = async (idUsuario) => {
-  try {
-    const res = await fetch(`http://localhost:3000/api/obtener_secciones_por_usuario/${idUsuario}`);
-    const data = await res.json();
-    setSections(data);
-    if (data.length > 0 && !activeSectionId) {
-      setActiveSectionId(data[0].id_seccion);
-    }
-  } catch (error) {
-    setError(error.message);
-  }
-};
-
-// Actualizar creación de sección usando API
-const registrarSeccion = async (e) => {
-  e.preventDefault();
-  if (!newSection.nombre) {
-    setError('Por favor ingresa un nombre para la sección');
-    return;
-  }
-  try {
-    await fetch('http://localhost:3000/api/registrar_seccion', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo_seccion: newSection.nombre,
-        descripcion_seccion: newSection.descripcion,
-        id_usuario: user.id_usuario
-      })
-    });
-    setNewSection({ nombre: '', descripcion: '' });
-    setIsSectionModalOpen(false);
-    obtenerSecciones(user.id_usuario);
-    setSuccess('Sección creada exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  } catch (error) {
-    setError(error.message);
-  }
-};
-
-// Usar endpoint para obtener archivos de una sección
-const fetchFiles = async (sectionId) => {
-  try {
-    const res = await fetch(`http://localhost:3000/api/obtener_archivos_seccion/${sectionId}`);
-    const data = await res.json();
-    setFiles(data);
-  } catch (error) {
-    setError(error.message);
-  }
-};
-
-// Actualizar subida de archivo usando FormData y endpoint
-const handleFileSubmit = async (e) => {
-  e.preventDefault();
-  if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
-    setError('Por favor completa todos los campos y selecciona una sección');
-    return;
-  }
-  const formDataToSend = new FormData();
-  formDataToSend.append('nombre_archivo', newFile.nombre);
-  formDataToSend.append('tipo', newFile.tipo);
-  formDataToSend.append('id_seccion', activeSectionId);
-  formDataToSend.append('archivo', newFile.archivo);
-  try {
-    await fetch('http://localhost:3000/api/registrar_archivo', {
-      method: 'POST',
-      body: formDataToSend
-    });
-    fetchFiles(activeSectionId);
-    setIsFileModalOpen(false);
-    setSuccess('Archivo subido exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  } catch (error) {
-    setError(error.message);
-  }
-};
-
-// Actualizar acción de OCR y traducción usando PUT
-const handleFileAction = async (file, action) => {
-  let updatedFile = { ...file };
-  if (action === 'translate' && file.tipo === 'PDF') {
-    updatedFile.traducido = true;
-    updatedFile.contenido_traducido = 'Este es el contenido traducido simulado del PDF.';
+  const obtenerSecciones = async (idUsuario) => {
     try {
-      await fetch(`http://localhost:3000/api/files/translate/${file.id_archivo}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto_traducido: updatedFile.contenido_traducido })
-      });
-      setSuccess('PDF traducido exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
-      fetchFiles(activeSectionId);
-    } catch (error) {
-      setError(error.message);
-    }
-  } else if (action === 'ocr') {
-    const textoExtraido = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
-    updatedFile.ocr_aplicado = true;
-    updatedFile.texto_extraido = textoExtraido;
-    try {
-      await fetch(`http://localhost:3000/api/files/ocr/${file.id_archivo}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ texto_escaneado: textoExtraido })
-      });
-      setSuccess('Texto extraído exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
-      fetchFiles(activeSectionId);
-      setViewingFile(updatedFile);
-      if (file.tipo === 'PDF') {
-        const blob = new Blob([textoExtraido], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${file.nombre}-ocr.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+      const res = await fetch(`http://localhost:3000/api/obtener_secciones_por_usuario/${idUsuario}`);
+      const data = await res.json();
+      setSections(data);
+      if (data.length > 0 && !activeSectionId) {
+        setActiveSectionId(data[0].id_seccion);
       }
     } catch (error) {
       setError(error.message);
     }
-  }
-};
+  };
 
-const handleDeleteSection = async (sectionId) => {
-  setError('La funcionalidad para eliminar secciones no está disponible.');
-};
+  // Actualizar creación de sección usando API
+  const registrarSeccion = async (e) => {
+    e.preventDefault();
+    if (!newSection.nombre) {
+      setError('Por favor ingresa un nombre para la sección');
+      return;
+    }
+    try {
+      await fetch('http://localhost:3000/api/registrar_seccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo_seccion: newSection.nombre,
+          descripcion_seccion: newSection.descripcion,
+          id_usuario: user.id_usuario
+        })
+      });
+      setNewSection({ nombre: '', descripcion: '' });
+      setIsSectionModalOpen(false);
+      obtenerSecciones(user.id_usuario);
+      setSuccess('Sección creada exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
-const handleDeleteFile = async (fileId) => {
-  setError('La funcionalidad para eliminar archivos no está disponible.');
-};
+  // Usar endpoint para obtener archivos de una sección
+  const fetchFiles = async (sectionId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/obtener_archivos_seccion/${sectionId}`);
+      const data = await res.json();
+      setFiles(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
-const handleViewFile = (file) => {
-  setViewingFile(file);
-  setIsViewFileModalOpen(true); // Open the modal for both PDFs and images
-};
+  // Actualizar subida de archivo usando FormData y endpoint
+  const handleFileSubmit = async (e) => {
+    e.preventDefault();
+    if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
+      setError('Por favor completa todos los campos y selecciona una sección');
+      return;
+    }
+    const formDataToSend = new FormData();
+    formDataToSend.append('nombre_archivo', newFile.nombre);
+    formDataToSend.append('tipo', newFile.tipo);
+    formDataToSend.append('id_seccion', activeSectionId);
+    formDataToSend.append('archivo', newFile.archivo);
+    try {
+      await fetch('http://localhost:3000/api/registrar_archivo', {
+        method: 'POST',
+        body: formDataToSend
+      });
+      fetchFiles(activeSectionId);
+      setIsFileModalOpen(false);
+      setSuccess('Archivo subido exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
-const handleConvertToText = (file) => {
-  alert(`Convirtiendo a texto un archivo de tipo: ${file.tipo}`);
-};
+  // Actualizar acción de OCR y traducción usando PUT
+  const handleFileAction = async (file, action) => {
+    let updatedFile = { ...file };
+    if (action === 'translate' && file.tipo === 'PDF') {
+      updatedFile.traducido = true;
+      updatedFile.contenido_traducido = 'Este es el contenido traducido simulado del PDF.';
+      try {
+        await fetch(`http://localhost:3000/api/files/translate/${file.id_archivo}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto_traducido: updatedFile.contenido_traducido })
+        });
+        setSuccess('PDF traducido exitosamente');
+        setTimeout(() => setSuccess(''), 3000);
+        fetchFiles(activeSectionId);
+      } catch (error) {
+        setError(error.message);
+      }
+    } else if (action === 'ocr') {
+      const textoExtraido = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
+      updatedFile.ocr_aplicado = true;
+      updatedFile.texto_extraido = textoExtraido;
+      try {
+        await fetch(`http://localhost:3000/api/files/ocr/${file.id_archivo}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto_escaneado: textoExtraido })
+        });
+        setSuccess('Texto extraído exitosamente');
+        setTimeout(() => setSuccess(''), 3000);
+        fetchFiles(activeSectionId);
+        setViewingFile(updatedFile);
+        if (file.tipo === 'PDF') {
+          const blob = new Blob([textoExtraido], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${file.nombre}-ocr.txt`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleDeleteSection = async (sectionId) => {
+    setError('La funcionalidad para eliminar secciones no está disponible.');
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    setError('La funcionalidad para eliminar archivos no está disponible.');
+  };
+
+  const handleViewFile = (file) => {
+    setViewingFile(file);
+    setIsViewFileModalOpen(true); // Open the modal for both PDFs and images
+  };
+
+  const handleConvertToText = (file) => {
+    alert(`Convirtiendo a texto un archivo de tipo: ${file.tipo}`);
+  };
 
   const handleScanText = (file) => {
     // Simulating text scanning process
     setTimeout(() => {
       setTextScanSuccess(true);
-      
+
       // Reset success message after 3 seconds
       setTimeout(() => {
         setTextScanSuccess(false);
@@ -264,86 +264,85 @@ const handleConvertToText = (file) => {
     }, 1000);
   };
 
-  const handleChatSubmit = (e) => {
+  const handleChatSubmit = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    
+
     // Agregar mensaje del usuario
     const userMessage = { sender: 'user', text: newMessage };
     setChatMessages(prev => [...prev, userMessage]);
+    let text = newMessage
     setNewMessage('');
-    
-    // Simular respuesta del bot después de un breve retraso
-    setTimeout(() => {
-      let botResponse;
-      
-      // Detectar comandos especiales
-      if (newMessage.toLowerCase().includes('traducir')) {
-        botResponse = { 
-          sender: 'bot', 
-          text: 'Para traducir texto, puedes usar la herramienta de traducción que se encuentra en la barra lateral.'
+
+    try {
+      const response = await fetch('https://m1zqnckrfa.execute-api.us-east-1.amazonaws.com/message_bot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          // text: newMessage,
+          text,
+          // sessionId: user.nombre_usuario
+          sessionId: "521985"
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.messages && Array.isArray(data.messages)) {
+        const botMessages = data.messages.map(msg => ({
+          sender: 'bot',
+          text: msg.content
+        }));
+
+        setChatMessages(prev => [...prev, ...botMessages]);
+      } else {
+        // Fallback en caso de que no haya mensajes válidos
+        const fallbackMessage = {
+          sender: 'bot',
+          text: 'Lo siento, hubo un problema al procesar tu mensaje.'
         };
-      } 
-      else if (newMessage.toLowerCase().includes('ocr') || 
-               newMessage.toLowerCase().includes('extraer texto') || 
-               newMessage.toLowerCase().includes('reconocimiento')) {
-        botResponse = { 
-          sender: 'bot', 
-          text: 'Para extraer texto de imágenes, abre el archivo y usa la opción "Extraer texto" disponible directamente en la vista del archivo.'
-        };
+        setChatMessages(prev => [...prev, fallbackMessage]);
       }
-      else if (newMessage.toLowerCase().includes('pdf') || newMessage.toLowerCase().includes('traducir documento')) {
-        botResponse = { 
-          sender: 'bot', 
-          text: 'Puedes traducir archivos PDF subiendo el documento y usando la opción de traducción desde la vista del archivo.'
-        };
-      }
-      else {
-        // Respuesta genérica
-        const responses = [
-          'Estoy aquí para ayudarte con la gestión de tus archivos y recursos.',
-          '¿Necesitas ayuda con alguna sección o archivo específico?',
-          'Puedes organizar tus archivos en secciones temáticas para una mejor gestión.',
-          'Recuerda que puedes extraer texto de tus imágenes y PDFs usando la opción "Extraer texto" al visualizar el archivo.'
-        ];
-        botResponse = { 
-          sender: 'bot', 
-          text: responses[Math.floor(Math.random() * responses.length)]
-        };
-      }
-      
-      setChatMessages(prev => [...prev, botResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error('Error al enviar mensaje al bot:', error);
+      const errorMessage = {
+        sender: 'bot',
+        text: 'Hubo un error al contactar al asistente. Por favor, intenta de nuevo más tarde.'
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
+    }
   };
 
-const handleTranslateSubmit = async (e) => {
-  e.preventDefault();
-  if (!textToTranslate.trim()) return;
+  const handleTranslateSubmit = async (e) => {
+    e.preventDefault();
+    if (!textToTranslate.trim()) return;
 
-  try {
-    const response = await fetch('http://localhost:3000/api/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: textToTranslate,
-        source_language: sourceLanguage,
-        target_language: translateLanguage,
-      }),
-    });
+    try {
+      const response = await fetch('http://localhost:3000/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: textToTranslate,
+          source_language: sourceLanguage,
+          target_language: translateLanguage,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Error al traducir el texto');
+      if (!response.ok) {
+        throw new Error('Error al traducir el texto');
+      }
+
+      const data = await response.json();
+      setTranslatedText(data.texto_traducido);
+      setSuccess('Texto traducido exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message);
+      setTimeout(() => setError(''), 3000);
     }
-
-    const data = await response.json();
-    setTranslatedText(data.texto_traducido);
-    setSuccess('Texto traducido exitosamente');
-    setTimeout(() => setSuccess(''), 3000);
-  } catch (error) {
-    setError(error.message);
-    setTimeout(() => setError(''), 3000);
-  }
-};
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -366,27 +365,27 @@ const handleTranslateSubmit = async (e) => {
           </div>
           {user && (
             <div className="sidebar-user">
-              <img 
-                src={user.url_foto} 
-                alt={user.nombre_usuario} 
-                className="user-avatar" 
+              <img
+                src={user.url_foto}
+                alt={user.nombre_usuario}
+                className="user-avatar"
                 onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} // Fallback image
               />
               <span>{user.nombre_usuario}</span>
             </div>
           )}
-          <button 
-            className="add-sections-button" 
+          <button
+            className="add-sections-button"
             onClick={() => setIsSectionModalOpen(true)}
           >
             Agregar Secciones
           </button>
         </div>
-        
+
         <div className="sections-header">
           <h3>Mis Secciones</h3>
         </div>
-        
+
         <nav className="sidebar-nav">
           {sections.length === 0 ? (
             <div className="empty-sections-note">
@@ -405,7 +404,7 @@ const handleTranslateSubmit = async (e) => {
             ))
           )}
         </nav>
-        
+
         <div className="sidebar-tools">
           <h3>Herramientas</h3>
           <button className="tool-button" onClick={() => setIsTranslateModalOpen(true)}>
@@ -417,7 +416,7 @@ const handleTranslateSubmit = async (e) => {
             <span>Asistente Virtual</span>
           </button>
         </div>
-        
+
         <div className="sidebar-footer">
           <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>
         </div>
@@ -438,7 +437,7 @@ const handleTranslateSubmit = async (e) => {
 
         {success && <div className="success-message">{success}</div>}
         {error && <div className="error-message">{error}</div>}
-        
+
         <div className="content-body">
           {files.length === 0 ? (
             <div className="empty-state">
@@ -484,12 +483,12 @@ const handleTranslateSubmit = async (e) => {
       </main>
 
       {/* Modal para crear nueva sección */}
-      <Modal 
-        isOpen={isSectionModalOpen} 
+      <Modal
+        isOpen={isSectionModalOpen}
         onClose={() => {
-          setIsSectionModalOpen(false); 
+          setIsSectionModalOpen(false);
           setError(null);
-        }} 
+        }}
         title="Crear Nueva Sección"
       >
         <form onSubmit={registrarSeccion} className="section-form">
@@ -499,7 +498,7 @@ const handleTranslateSubmit = async (e) => {
               id="nombre"
               type="text"
               value={newSection.nombre}
-              onChange={(e) => setNewSection({...newSection, nombre: e.target.value})}
+              onChange={(e) => setNewSection({ ...newSection, nombre: e.target.value })}
               placeholder="Ej: Proyectos, Estudios, Trabajo..."
               required
             />
@@ -509,14 +508,14 @@ const handleTranslateSubmit = async (e) => {
             <textarea
               id="descripcion"
               value={newSection.descripcion}
-              onChange={(e) => setNewSection({...newSection, descripcion: e.target.value})}
+              onChange={(e) => setNewSection({ ...newSection, descripcion: e.target.value })}
               placeholder="Describe el contenido de esta sección"
               rows="4"
             />
           </div>
           <div className="form-actions">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="cancel-button"
               onClick={() => {
                 setIsSectionModalOpen(false);
@@ -533,12 +532,12 @@ const handleTranslateSubmit = async (e) => {
       </Modal>
 
       {/* Modal para subir archivo */}
-      <Modal 
-        isOpen={isFileModalOpen} 
+      <Modal
+        isOpen={isFileModalOpen}
         onClose={() => {
-          setIsFileModalOpen(false); 
+          setIsFileModalOpen(false);
           setError(null);
-        }} 
+        }}
         title="Subir Nuevo Archivo"
       >
         <form onSubmit={handleFileSubmit} className="file-form">
@@ -548,7 +547,7 @@ const handleTranslateSubmit = async (e) => {
               id="nombre"
               type="text"
               value={newFile.nombre}
-              onChange={(e) => setNewFile({...newFile, nombre: e.target.value})}
+              onChange={(e) => setNewFile({ ...newFile, nombre: e.target.value })}
               placeholder="Nombre del archivo"
               required
             />
@@ -558,7 +557,7 @@ const handleTranslateSubmit = async (e) => {
             <select
               id="tipo"
               value={newFile.tipo}
-              onChange={(e) => setNewFile({...newFile, tipo: e.target.value})}
+              onChange={(e) => setNewFile({ ...newFile, tipo: e.target.value })}
               required
             >
               <option value="PDF">Archivo PDF</option>
@@ -570,14 +569,14 @@ const handleTranslateSubmit = async (e) => {
             <input
               id="archivo"
               type="file"
-              onChange={(e) => setNewFile({...newFile, archivo: e.target.files[0]})}
+              onChange={(e) => setNewFile({ ...newFile, archivo: e.target.files[0] })}
               accept=".jpg,.jpeg,.png,.pdf"
               required
             />
           </div>
           <div className="form-actions">
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="cancel-button"
               onClick={() => {
                 setIsFileModalOpen(false);
@@ -639,9 +638,9 @@ const handleTranslateSubmit = async (e) => {
       </Modal>
 
       {/* Modal para resultados OCR */}
-      <Modal 
-        isOpen={isOcrResultModalOpen} 
-        onClose={() => setIsOcrResultModalOpen(false)} 
+      <Modal
+        isOpen={isOcrResultModalOpen}
+        onClose={() => setIsOcrResultModalOpen(false)}
         title="Texto Extraído (OCR)"
         wide={true}
       >
@@ -681,6 +680,7 @@ const handleTranslateSubmit = async (e) => {
             placeholder="Escribe tu mensaje..."
           />
           <button type="submit">Enviar</button>
+          {/* boton para enviar el texto del chat */}
         </form>
       </div>
 
@@ -692,9 +692,9 @@ const handleTranslateSubmit = async (e) => {
       )}
 
       {/* Modal para traducción */}
-      <Modal 
-        isOpen={isTranslateModalOpen} 
-        onClose={() => setIsTranslateModalOpen(false)} 
+      <Modal
+        isOpen={isTranslateModalOpen}
+        onClose={() => setIsTranslateModalOpen(false)}
         title="Traducir Texto"
       >
         <form onSubmit={handleTranslateSubmit} className="translate-form">

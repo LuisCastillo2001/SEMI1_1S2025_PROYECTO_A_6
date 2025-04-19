@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('port',  3000);
 app.get("/", (req, res) => {
-    res.status(200).send("Bienvenido a la api en node.js del G6")
+    res.status(200).send("Bienvenido a la api en node.js del Grupo6")
 })
 // Rutas
 app.use('/api', userRoutes);

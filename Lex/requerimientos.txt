@@ -1,0 +1,13 @@
+@aws-sdk/client-lex-runtime-v2
+
+
+--Como no se eligio un usuario en especifico si no se uso uno por defecto para el bot solo el tiene los permisos de igaul forma para el root con lambda al rol se le debe dar permisos 
+--Conceder permisos de AWSLexFullAcces en lambda para la conexion con el bot / -> Configuracion -> Përmisos -> Nombre del rol 
+--Importante en api gateway llenar CORS para poder acceder desde react
+    *Acces-Control-Allow-Origin -- *
+    *Acces-Control-Allow-Headers -- Content-Type
+    *Acces-Control-Allow-Methods -- POST , OPTIONS o todos(*)
+--APi HTTP en api gateway
+ruta: https://m1zqnckrfa.execute-api.us-east-1.amazonaws.com/message_bot
+tipo: post
+requiere body: text y sessionId 
