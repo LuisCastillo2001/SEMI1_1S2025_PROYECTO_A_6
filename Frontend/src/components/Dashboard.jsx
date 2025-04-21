@@ -274,6 +274,9 @@ function Dashboard() {
     let text = newMessage
     setNewMessage('');
 
+    let mysections = sections.map(sect => sect.titulo_seccion)
+    // console.log(mysections)
+
     try {
       const response = await fetch('https://m1zqnckrfa.execute-api.us-east-1.amazonaws.com/message_bot', {
         method: 'POST',
@@ -283,8 +286,10 @@ function Dashboard() {
         body: JSON.stringify({
           // text: newMessage,
           text,
-          // sessionId: user.nombre_usuario
-          sessionId: "521985"
+          sessionId: user.nombre_usuario.replace(/\s+/g, ''),
+          // sessionId: "521985"
+          user: user.nombre_usuario,
+          sections: mysections.join('|')
         })
       });
 

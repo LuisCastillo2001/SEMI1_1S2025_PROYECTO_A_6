@@ -1,3 +1,5 @@
+import { LexRuntimeV2Client, RecognizeTextCommand } from "@aws-sdk/client-lex-runtime-v2";
+
 const client = new LexRuntimeV2Client({});
 export const handler = async (event) => {
 
@@ -14,7 +16,7 @@ export const handler = async (event) => {
         };
     }
 
-    const { text, sessionId } = body;
+    const { text, sessionId, user, sections} = body;
 
     if (!text || !sessionId) {
         return {
@@ -28,7 +30,13 @@ export const handler = async (event) => {
         botAliasId: process.env.ALIAS_ID,
         localeId: process.env.BOT_LENGUAJE,
         sessionId: sessionId,
-        text: text
+        text: text,
+        sessionState: {
+            sessionAttributes: {
+                nombre: user,
+                sections: sections
+            }
+        }
     };
 
     try {
