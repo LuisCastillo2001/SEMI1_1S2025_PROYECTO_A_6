@@ -127,6 +127,7 @@ export const registrarArchivo = async (req, res) => {
                 url_archivo = data.fileUrl;
             }
         }
+        //console.log({ nombre_archivo, tipo, url_archivo, id_seccion });
         const query = "CALL sp_registrar_archivo(?, ?, ?, ?)";
         connectionDB.query(query, [nombre_archivo, tipo, url_archivo, id_seccion], (err, results) => {
             if (err) return res.status(500).json({ error: err.message });

@@ -20,7 +20,7 @@ CREATE PROCEDURE sp_registrar_archivo(
     IN p_id_seccion INT
 )
 BEGIN
-    INSERT INTO archivos (nombre_archivo, tipo, url_archivo, texto_escaneado, texto_traducido, id_seccion)
+    INSERT INTO archivos (nombre_archivo, tipo, url_archivo, id_seccion)
     VALUES (p_nombre_archivo, p_tipo, p_url_archivo, p_id_seccion);
 END$$
 
