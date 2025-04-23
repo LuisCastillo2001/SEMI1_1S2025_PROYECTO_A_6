@@ -884,6 +884,34 @@
   animation: fadeInOut 3s ease;
 }
 
+.styled-text-box {
+  background-color: #f9f9f9;
+  padding: 16px;
+  border-radius: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  margin-top: 20px;
+}
+
+.styled-text-box h3 {
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.styled-text-box p {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.no-text {
+  font-style: italic;
+  color: #888;
+}
+
 @keyframes fadeInOut {
   0% {
     opacity: 0;

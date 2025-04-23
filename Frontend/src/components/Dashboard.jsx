@@ -1,19 +1,39 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Dashboard.css';
-import Modal from './Modal';
-import logoImage from '../Images/logo.png'; // Import the logo image
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Dashboard.css";
+import Modal from "./Modal";
+import logoImage from "../Images/logo.png"; // Import the logo image
 
 // Icons for UI
 const SectionIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M2 5h20v14H2z"></path>
     <path d="M2 10h20"></path>
   </svg>
 );
 
 const FileIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
     <line x1="16" y1="13" x2="8" y2="13" />
@@ -23,7 +43,17 @@ const FileIcon = () => (
 );
 
 const ChatbotIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
     <circle cx="8.5" cy="8.5" r="1.5" />
     <circle cx="15.5" cy="8.5" r="1.5" />
@@ -33,7 +63,17 @@ const ChatbotIcon = () => (
 );
 
 const TranslateIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M5 8l6 6" />
     <path d="M4 14l6-6 2 2" />
     <path d="M2 5h12" />
@@ -48,38 +88,46 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState("");
 
   // Estado de secciones
   const [sections, setSections] = useState([]);
   const [activeSectionId, setActiveSectionId] = useState(null);
-  const [newSection, setNewSection] = useState({ nombre: '', descripcion: '' });
+  const [newSection, setNewSection] = useState({ nombre: "", descripcion: "" });
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
 
   // Estado de archivos
   const [files, setFiles] = useState([]);
-  const [newFile, setNewFile] = useState({ nombre: '', tipo: 'PDF', archivo: null });
+  const [newFile, setNewFile] = useState({
+    nombre: "",
+    tipo: "PDF",
+    archivo: null,
+  });
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [isViewFileModalOpen, setIsViewFileModalOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState(null);
+  const [extractedText, setExtractedText] = useState(""); // Estado para el texto extraído
 
   // Estado del chatbot
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { sender: 'bot', text: '¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?' }
+    {
+      sender: "bot",
+      text: "¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?",
+    },
   ]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
 
   // Estado de herramientas
   const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false);
-  const [textToTranslate, setTextToTranslate] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
-  const [translateLanguage, setTranslateLanguage] = useState('es');
-  const [sourceLanguage, setSourceLanguage] = useState('es');
+  const [textToTranslate, setTextToTranslate] = useState("");
+  const [translatedText, setTranslatedText] = useState("");
+  const [translateLanguage, setTranslateLanguage] = useState("es");
+  const [sourceLanguage, setSourceLanguage] = useState("es");
 
   // Estado para OCR
   const [isOcrResultModalOpen, setIsOcrResultModalOpen] = useState(false);
-  const [ocrResult, setOcrResult] = useState('');
+  const [ocrResult, setOcrResult] = useState("");
 
   // Add state for text scanning
   const [textScanSuccess, setTextScanSuccess] = useState(false);
@@ -87,9 +135,9 @@ function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
+    const userData = localStorage.getItem("user");
     if (!userData) {
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -113,7 +161,9 @@ function Dashboard() {
   // Reemplazar fetchSections para usar GET desde la API y filtrar por usuario
   const obtenerSecciones = async (idUsuario) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/obtener_secciones_por_usuario/${idUsuario}`);
+      const res = await fetch(
+        `http://localhost:3000/api/obtener_secciones_por_usuario/${idUsuario}`
+      );
       const data = await res.json();
       setSections(data);
       if (data.length > 0 && !activeSectionId) {
@@ -128,24 +178,24 @@ function Dashboard() {
   const registrarSeccion = async (e) => {
     e.preventDefault();
     if (!newSection.nombre) {
-      setError('Por favor ingresa un nombre para la sección');
+      setError("Por favor ingresa un nombre para la sección");
       return;
     }
     try {
-      await fetch('http://localhost:3000/api/registrar_seccion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("http://localhost:3000/api/registrar_seccion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           titulo_seccion: newSection.nombre,
           descripcion_seccion: newSection.descripcion,
-          id_usuario: user.id_usuario
-        })
+          id_usuario: user.id_usuario,
+        }),
       });
-      setNewSection({ nombre: '', descripcion: '' });
+      setNewSection({ nombre: "", descripcion: "" });
       setIsSectionModalOpen(false);
       obtenerSecciones(user.id_usuario);
-      setSuccess('Sección creada exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess("Sección creada exitosamente");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       setError(error.message);
     }
@@ -154,7 +204,9 @@ function Dashboard() {
   // Usar endpoint para obtener archivos de una sección
   const fetchFiles = async (sectionId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/obtener_archivos_seccion/${sectionId}`);
+      const res = await fetch(
+        `http://localhost:3000/api/obtener_archivos_seccion/${sectionId}`
+      );
       const data = await res.json();
       setFiles(data);
     } catch (error) {
@@ -165,24 +217,29 @@ function Dashboard() {
   // Actualizar subida de archivo usando FormData y endpoint
   const handleFileSubmit = async (e) => {
     e.preventDefault();
-    if (!newFile.nombre || !newFile.tipo || !newFile.archivo || !activeSectionId) {
-      setError('Por favor completa todos los campos y selecciona una sección');
+    if (
+      !newFile.nombre ||
+      !newFile.tipo ||
+      !newFile.archivo ||
+      !activeSectionId
+    ) {
+      setError("Por favor completa todos los campos y selecciona una sección");
       return;
     }
     const formDataToSend = new FormData();
-    formDataToSend.append('nombre_archivo', newFile.nombre);
-    formDataToSend.append('tipo', newFile.tipo);
-    formDataToSend.append('id_seccion', activeSectionId);
-    formDataToSend.append('archivo', newFile.archivo);
+    formDataToSend.append("nombre_archivo", newFile.nombre);
+    formDataToSend.append("tipo", newFile.tipo);
+    formDataToSend.append("id_seccion", activeSectionId);
+    formDataToSend.append("archivo", newFile.archivo);
     try {
-      await fetch('http://localhost:3000/api/registrar_archivo', {
-        method: 'POST',
-        body: formDataToSend
+      await fetch("http://localhost:3000/api/registrar_archivo", {
+        method: "POST",
+        body: formDataToSend,
       });
       fetchFiles(activeSectionId);
       setIsFileModalOpen(false);
-      setSuccess('Archivo subido exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess("Archivo subido exitosamente");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       setError(error.message);
     }
@@ -191,39 +248,46 @@ function Dashboard() {
   // Actualizar acción de OCR y traducción usando PUT
   const handleFileAction = async (file, action) => {
     let updatedFile = { ...file };
-    if (action === 'translate' && file.tipo === 'PDF') {
+    if (action === "translate" && file.tipo === "PDF") {
       updatedFile.traducido = true;
-      updatedFile.contenido_traducido = 'Este es el contenido traducido simulado del PDF.';
+      updatedFile.contenido_traducido =
+        "Este es el contenido traducido simulado del PDF.";
       try {
-        await fetch(`http://localhost:3000/api/files/translate/${file.id_archivo}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto_traducido: updatedFile.contenido_traducido })
-        });
-        setSuccess('PDF traducido exitosamente');
-        setTimeout(() => setSuccess(''), 3000);
+        await fetch(
+          `http://localhost:3000/api/files/translate/${file.id_archivo}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              texto_traducido: updatedFile.contenido_traducido,
+            }),
+          }
+        );
+        setSuccess("PDF traducido exitosamente");
+        setTimeout(() => setSuccess(""), 3000);
         fetchFiles(activeSectionId);
       } catch (error) {
         setError(error.message);
       }
-    } else if (action === 'ocr') {
-      const textoExtraido = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
+    } else if (action === "ocr") {
+      const textoExtraido =
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi...";
       updatedFile.ocr_aplicado = true;
       updatedFile.texto_extraido = textoExtraido;
       try {
         await fetch(`http://localhost:3000/api/files/ocr/${file.id_archivo}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ texto_escaneado: textoExtraido })
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texto_escaneado: textoExtraido }),
         });
-        setSuccess('Texto extraído exitosamente');
-        setTimeout(() => setSuccess(''), 3000);
+        setSuccess("Texto extraído exitosamente");
+        setTimeout(() => setSuccess(""), 3000);
         fetchFiles(activeSectionId);
         setViewingFile(updatedFile);
-        if (file.tipo === 'PDF') {
-          const blob = new Blob([textoExtraido], { type: 'text/plain' });
+        if (file.tipo === "PDF") {
+          const blob = new Blob([textoExtraido], { type: "text/plain" });
           const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
+          const a = document.createElement("a");
           a.href = url;
           a.download = `${file.nombre}-ocr.txt`;
           a.click();
@@ -236,11 +300,11 @@ function Dashboard() {
   };
 
   const handleDeleteSection = async (sectionId) => {
-    setError('La funcionalidad para eliminar secciones no está disponible.');
+    setError("La funcionalidad para eliminar secciones no está disponible.");
   };
 
   const handleDeleteFile = async (fileId) => {
-    setError('La funcionalidad para eliminar archivos no está disponible.');
+    setError("La funcionalidad para eliminar archivos no está disponible.");
   };
 
   const handleViewFile = (file) => {
@@ -248,8 +312,23 @@ function Dashboard() {
     setIsViewFileModalOpen(true); // Open the modal for both PDFs and images
   };
 
-  const handleConvertToText = (file) => {
+  const handleConvertToText = async (file) => {
     alert(`Convirtiendo a texto un archivo de tipo: ${file.tipo}`);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/extraer_datos_archivo/${file.id_archivo}`
+      );
+      if (!response.ok) {
+        throw new Error("Error al extraer datos del archivo");
+      }
+
+      const data = await response.json();
+      setExtractedText(data.texto_extraido);
+      console.log(data);
+    } catch (error) {
+      alert("Hubo un error al extraer los datos del archivo.");
+    }
   };
 
   const handleScanText = (file) => {
@@ -269,54 +348,57 @@ function Dashboard() {
     if (!newMessage.trim()) return;
 
     // Agregar mensaje del usuario
-    const userMessage = { sender: 'user', text: newMessage };
-    setChatMessages(prev => [...prev, userMessage]);
-    let text = newMessage
-    setNewMessage('');
+    const userMessage = { sender: "user", text: newMessage };
+    setChatMessages((prev) => [...prev, userMessage]);
+    let text = newMessage;
+    setNewMessage("");
 
-    let mysections = sections.map(sect => sect.titulo_seccion)
+    let mysections = sections.map((sect) => sect.titulo_seccion);
     // console.log(mysections)
 
     try {
-      const response = await fetch('https://m1zqnckrfa.execute-api.us-east-1.amazonaws.com/message_bot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          // text: newMessage,
-          text,
-          sessionId: user.nombre_usuario.replace(/\s+/g, ''),
-          // sessionId: "521985"
-          user: user.nombre_usuario,
-          sections: mysections.join('|')
-        })
-      });
+      const response = await fetch(
+        "https://m1zqnckrfa.execute-api.us-east-1.amazonaws.com/message_bot",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            // text: newMessage,
+            text,
+            sessionId: user.nombre_usuario.replace(/\s+/g, ""),
+            // sessionId: "521985"
+            user: user.nombre_usuario,
+            sections: mysections.join("|"),
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (data.messages && Array.isArray(data.messages)) {
-        const botMessages = data.messages.map(msg => ({
-          sender: 'bot',
-          text: msg.content
+        const botMessages = data.messages.map((msg) => ({
+          sender: "bot",
+          text: msg.content,
         }));
 
-        setChatMessages(prev => [...prev, ...botMessages]);
+        setChatMessages((prev) => [...prev, ...botMessages]);
       } else {
         // Fallback en caso de que no haya mensajes válidos
         const fallbackMessage = {
-          sender: 'bot',
-          text: 'Lo siento, hubo un problema al procesar tu mensaje.'
+          sender: "bot",
+          text: "Lo siento, hubo un problema al procesar tu mensaje.",
         };
-        setChatMessages(prev => [...prev, fallbackMessage]);
+        setChatMessages((prev) => [...prev, fallbackMessage]);
       }
     } catch (error) {
-      console.error('Error al enviar mensaje al bot:', error);
+      console.error("Error al enviar mensaje al bot:", error);
       const errorMessage = {
-        sender: 'bot',
-        text: 'Hubo un error al contactar al asistente. Por favor, intenta de nuevo más tarde.'
+        sender: "bot",
+        text: "Hubo un error al contactar al asistente. Por favor, intenta de nuevo más tarde.",
       };
-      setChatMessages(prev => [...prev, errorMessage]);
+      setChatMessages((prev) => [...prev, errorMessage]);
     }
   };
 
@@ -325,9 +407,9 @@ function Dashboard() {
     if (!textToTranslate.trim()) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:3000/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: textToTranslate,
           source_language: sourceLanguage,
@@ -336,29 +418,31 @@ function Dashboard() {
       });
 
       if (!response.ok) {
-        throw new Error('Error al traducir el texto');
+        throw new Error("Error al traducir el texto");
       }
 
       const data = await response.json();
       setTranslatedText(data.texto_traducido);
-      setSuccess('Texto traducido exitosamente');
-      setTimeout(() => setSuccess(''), 3000);
+      setSuccess("Texto traducido exitosamente");
+      setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
       setError(error.message);
-      setTimeout(() => setError(''), 3000);
+      setTimeout(() => setError(""), 3000);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
   if (loading && !user) {
     return <div className="loading">Cargando...</div>;
   }
 
-  const activeSection = sections.find(section => section.id_seccion === activeSectionId);
+  const activeSection = sections.find(
+    (section) => section.id_seccion === activeSectionId
+  );
 
   return (
     <div className="dashboard-container">
@@ -374,7 +458,9 @@ function Dashboard() {
                 src={user.url_foto}
                 alt={user.nombre_usuario}
                 className="user-avatar"
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/40'; }} // Fallback image
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/40";
+                }} // Fallback image
               />
               <span>{user.nombre_usuario}</span>
             </div>
@@ -400,7 +486,9 @@ function Dashboard() {
             sections.map((section) => (
               <button
                 key={section.id_seccion}
-                className={`nav-item ${activeSectionId === section.id_seccion ? 'active' : ''}`}
+                className={`nav-item ${
+                  activeSectionId === section.id_seccion ? "active" : ""
+                }`}
                 onClick={() => setActiveSectionId(section.id_seccion)}
               >
                 <SectionIcon />
@@ -412,7 +500,10 @@ function Dashboard() {
 
         <div className="sidebar-tools">
           <h3>Herramientas</h3>
-          <button className="tool-button" onClick={() => setIsTranslateModalOpen(true)}>
+          <button
+            className="tool-button"
+            onClick={() => setIsTranslateModalOpen(true)}
+          >
             <TranslateIcon />
             <span>Traducir Texto</span>
           </button>
@@ -423,18 +514,27 @@ function Dashboard() {
         </div>
 
         <div className="sidebar-footer">
-          <button className="logout-button" onClick={handleLogout}>Cerrar Sesión</button>
+          <button className="logout-button" onClick={handleLogout}>
+            Cerrar Sesión
+          </button>
         </div>
       </aside>
 
       <main className="main-content">
         <header className="content-header">
-          <h1>{activeSection ? activeSection.titulo_seccion : 'Bienvenido a FILEASSIST'}</h1>
+          <h1>
+            {activeSection
+              ? activeSection.titulo_seccion
+              : "Bienvenido a FILEASSIST"}
+          </h1>
         </header>
 
         {activeSection && (
           <div className="section-actions">
-            <button className="action-button create-button" onClick={() => setIsFileModalOpen(true)}>
+            <button
+              className="action-button create-button"
+              onClick={() => setIsFileModalOpen(true)}
+            >
               Subir Archivo
             </button>
           </div>
@@ -448,7 +548,10 @@ function Dashboard() {
             <div className="empty-state">
               <h3>No hay archivos en esta sección</h3>
               <p>Sube un nuevo archivo para comenzar</p>
-              <button className="action-button" onClick={() => setIsFileModalOpen(true)}>
+              <button
+                className="action-button"
+                onClick={() => setIsFileModalOpen(true)}
+              >
                 Subir Archivo
               </button>
             </div>
@@ -461,13 +564,13 @@ function Dashboard() {
                     <span className="file-type">{file.tipo}</span>
                   </div>
                   <div className="file-card-body">
-                    {file.tipo === 'Pdf' && (
+                    {file.tipo === "Pdf" && (
                       <div className="file-pdf-icon">
                         <FileIcon />
                         <span className="file-extension">PDF</span>
                       </div>
                     )}
-                    {file.tipo === 'Imagen' && (
+                    {file.tipo === "Imagen" && (
                       <img
                         src={file.url_archivo}
                         alt={file.nombre_archivo}
@@ -476,7 +579,10 @@ function Dashboard() {
                     )}
                   </div>
                   <div className="file-card-actions">
-                    <button className="view-button" onClick={() => handleViewFile(file)}>
+                    <button
+                      className="view-button"
+                      onClick={() => handleViewFile(file)}
+                    >
                       Ver archivo
                     </button>
                   </div>
@@ -503,7 +609,9 @@ function Dashboard() {
               id="nombre"
               type="text"
               value={newSection.nombre}
-              onChange={(e) => setNewSection({ ...newSection, nombre: e.target.value })}
+              onChange={(e) =>
+                setNewSection({ ...newSection, nombre: e.target.value })
+              }
               placeholder="Ej: Proyectos, Estudios, Trabajo..."
               required
             />
@@ -513,7 +621,9 @@ function Dashboard() {
             <textarea
               id="descripcion"
               value={newSection.descripcion}
-              onChange={(e) => setNewSection({ ...newSection, descripcion: e.target.value })}
+              onChange={(e) =>
+                setNewSection({ ...newSection, descripcion: e.target.value })
+              }
               placeholder="Describe el contenido de esta sección"
               rows="4"
             />
@@ -552,7 +662,9 @@ function Dashboard() {
               id="nombre"
               type="text"
               value={newFile.nombre}
-              onChange={(e) => setNewFile({ ...newFile, nombre: e.target.value })}
+              onChange={(e) =>
+                setNewFile({ ...newFile, nombre: e.target.value })
+              }
               placeholder="Nombre del archivo"
               required
             />
@@ -574,7 +686,9 @@ function Dashboard() {
             <input
               id="archivo"
               type="file"
-              onChange={(e) => setNewFile({ ...newFile, archivo: e.target.files[0] })}
+              onChange={(e) =>
+                setNewFile({ ...newFile, archivo: e.target.files[0] })
+              }
               accept=".jpg,.jpeg,.png,.pdf"
               required
             />
@@ -608,12 +722,12 @@ function Dashboard() {
         wide={true}
       >
         <div className="file-viewer">
-          {viewingFile?.tipo === 'Pdf' && (
+          {viewingFile?.tipo === "Pdf" && (
             <>
               <iframe
                 src={`http://localhost:3000/api/ver_pdf/${viewingFile.id_archivo}`}
                 title={viewingFile.nombre_archivo}
-                style={{ width: '100%', height: '80vh', border: 'none' }}
+                style={{ width: "100%", height: "80vh", border: "none" }}
               ></iframe>
               <button
                 className="action-button"
@@ -623,22 +737,44 @@ function Dashboard() {
               </button>
             </>
           )}
-          {viewingFile?.tipo === 'Imagen' && (
+          {viewingFile?.tipo === "Imagen" && (
             <>
               <img
                 src={viewingFile.url_archivo}
                 alt={viewingFile.nombre_archivo}
                 className="image-full"
-                style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain' }}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "80vh",
+                  objectFit: "contain",
+                }}
               />
-              <button
-                className="action-button"
-                onClick={() => handleConvertToText(viewingFile)}
-              >
-                Convertir a Texto
-              </button>
+              {!viewingFile?.texto_escaneado && (
+                <button
+                  className="action-button"
+                  onClick={() => handleConvertToText(viewingFile)}
+                >
+                  Convertir a Texto
+                </button>
+              )}
             </>
           )}
+
+          <div className="file-viewer-text styled-text-box">
+            {viewingFile?.texto_escaneado ? (
+              <>
+                <h3>Texto Escaneado:</h3>
+                <p>{viewingFile.texto_escaneado}</p>
+              </>
+            ) : extractedText ? (
+              <>
+                <h3>Texto Extraído:</h3>
+                <p>{extractedText}</p>
+              </>
+            ) : (
+              <p className="no-text">No se ha extraído ningún texto aún.</p>
+            )}
+          </div>
         </div>
       </Modal>
 
@@ -650,14 +786,21 @@ function Dashboard() {
         wide={true}
       >
         <div className="ocr-result-container">
-          <pre className="ocr-result-text">{viewingFile?.texto_extraido || ocrResult}</pre>
+          <pre className="ocr-result-text">
+            {viewingFile?.texto_extraido || ocrResult}
+          </pre>
           <div className="form-actions">
-            <button className="action-button" onClick={() => {
-              // Copiar al portapapeles
-              navigator.clipboard.writeText(viewingFile?.texto_extraido || ocrResult);
-              setSuccess('Texto copiado al portapapeles');
-              setTimeout(() => setSuccess(''), 2000);
-            }}>
+            <button
+              className="action-button"
+              onClick={() => {
+                // Copiar al portapapeles
+                navigator.clipboard.writeText(
+                  viewingFile?.texto_extraido || ocrResult
+                );
+                setSuccess("Texto copiado al portapapeles");
+                setTimeout(() => setSuccess(""), 2000);
+              }}
+            >
               Copiar al portapapeles
             </button>
           </div>
@@ -665,10 +808,12 @@ function Dashboard() {
       </Modal>
 
       {/* Chatbot */}
-      <div className={`chatbot ${isChatOpen ? 'open' : ''}`}>
+      <div className={`chatbot ${isChatOpen ? "open" : ""}`}>
         <div className="chatbot-header">
           <h3>Asistente Virtual</h3>
-          <button className="close-chat" onClick={() => setIsChatOpen(false)}>×</button>
+          <button className="close-chat" onClick={() => setIsChatOpen(false)}>
+            ×
+          </button>
         </div>
         <div className="chatbot-messages">
           {chatMessages.map((msg, index) => (

@@ -4,6 +4,7 @@ import path from 'path';
 import connectionDB from '../DB/dbconnection.js';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
+import { RekognitionClient, DetectTextCommand } from '@aws-sdk/client-rekognition'; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,15 @@ export const upload = multer({
 });
 
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Configuracion para el cliente de Rekognition
+const rekognition = new RekognitionClient({
+    region: process.env.AWS_REGION, // Usar la variable de entorno para la región
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Usar la variable de entorno para el access key
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // Usar la variable de entorno para el secret key
+    }
+  });
 
 // Registrar usuario
 export const registrarUsuario = async (req, res) => {
@@ -222,3 +232,64 @@ export const translateText = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+export const extraerDatosArchivo = async (req, res) => {
+    const { id_archivo } = req.params;
+  
+    const sql = "CALL visualizar_archivo(?)";
+    connectionDB.query(sql, [id_archivo], async (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+  
+      const archivo = results[0][0];
+      if (!archivo || !archivo.url_archivo || archivo.tipo.toLowerCase() !== 'imagen') {
+        return res.status(400).json({ error: 'El archivo no existe, no es una imagen o no tiene URL' });
+      }
+  
+      const url = archivo.url_archivo;
+      const match = url.match(/^https?:\/\/([^.]+)\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com\/(.+)$/);
+      if (!match) {
+        return res.status(400).json({ error: 'No se pudo extraer bucket y key de la URL' });
+      }
+  
+      const bucket = match[1];
+      const key = decodeURIComponent(match[2]);
+  
+      const params = {
+        Image: {
+          S3Object: {
+            Bucket: bucket,
+            Name: key
+          }
+        }
+      };
+  
+      try {
+        // Crear el comando de DetectText
+        const command = new DetectTextCommand(params);
+        const data = await rekognition.send(command); // Esperar la respuesta de Rekognition
+  
+        const textoDetectado = data.TextDetections
+          .filter(item => item.Type === 'LINE')
+          .map(item => item.DetectedText)
+          .join('\n');
+  
+        // Llamar al procedimiento almacenado para guardar el texto extraído
+        const updateSql = "CALL sp_registrar_archivo_escaneado(?, ?)";
+        connectionDB.query(updateSql, [id_archivo, textoDetectado], (updateErr, updateResults) => {
+          if (updateErr) {
+            return res.status(500).json({ error: 'Error al actualizar el texto en la base de datos', detail: updateErr.message });
+          }
+  
+          // Responder con los datos actualizados
+          res.json({
+            mensaje: 'Texto extraído y almacenado correctamente',
+            texto_extraido: textoDetectado
+          });
+        });
+  
+      } catch (rekogErr) {
+        console.error("Error con Rekognition:", rekogErr);
+        return res.status(500).json({ error: 'Error al detectar texto con Rekognition' });
+      }
+    });
+  };
