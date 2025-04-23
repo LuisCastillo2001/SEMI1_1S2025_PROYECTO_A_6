@@ -23,12 +23,17 @@ function Login() {
       });
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem('user', JSON.stringify(data[0]));
-        setMessage('Inicio de sesión exitoso');
-        setTimeout(() => navigate('/dashboard'), 1000);
+        if (data && data[0].id_usuario) {
+          localStorage.setItem('user', JSON.stringify(data[0]));
+          setMessage('Inicio de sesión exitoso');
+          setTimeout(() => navigate('/dashboard'), 1000);
+        } else {
+          setMessage('Credenciales incorrectas');
+        }
       } else {
-        setMessage('Credenciales incorrectas');
+        setMessage('Error al conectarse al servidor');
       }
+
     } catch (error) {
       setMessage(error.message);
     }
