@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import "./Dashboard.css";
 import Modal from "./Modal";
-import logoImage from "../Images/logo.png"; // Import the logo image
+import logoImage from '../Images/logo.png'; // Import the logo image
+import { signOut } from 'aws-amplify/auth'; //Para prueba 
 
 // Icons for UI
 const SectionIcon = () => (
@@ -136,7 +137,9 @@ function Dashboard() {
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    if (!userData) {
+    const token = localStorage.getItem("token");
+
+    if (!userData || !token) {
       navigate("/login");
       return;
     }
@@ -431,9 +434,18 @@ function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
+  const handleLogout = async() => {
+    try {
+      await signOut(); // Cierra la sesión en Cognito
+      localStorage.removeItem('user'); 
+      localStorage.removeItem('token');
+      console.log('Sesión cerrada exitosamente.');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      console.log('Error al cerrar sesión. Intenta nuevamente.');
+    }
+    
   };
 
   if (loading && !user) {

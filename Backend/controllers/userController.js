@@ -64,7 +64,14 @@ export const registrarUsuario = async (req, res) => {
         
         const query = `CALL sp_registrar_usuario(?, ?, ?, ?)`; // Updated procedure name
         connectionDB.query(query, [nombre_usuario, correo, contrasenia, url_foto], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) {
+                // Manejar errores de duplicados
+                if (err.code === 'ER_DUP_ENTRY') {
+                    const field = err.sqlMessage.includes('correo') ? 'correo' : 'nombre_usuario';
+                    return res.status(400).json({ error: `El ${field} ya está registrado. Por favor, usa otro.` });
+                }
+                return res.status(500).json({ error: err.message });
+            }
             res.status(201).json({ mensaje: 'Usuario registrado exitosamente', url_foto });
         });
     } catch (error) {

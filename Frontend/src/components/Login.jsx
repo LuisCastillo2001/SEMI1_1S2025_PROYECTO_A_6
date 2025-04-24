@@ -3,6 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import filesImage from '../Images/files.png';
 
+// Cognito
+import { signIn } from 'aws-amplify/auth';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { signOut } from 'aws-amplify/auth'; //Para prueba 
+
+const handleLogout = async () => {
+  try {
+    await signOut(); // Cierra la sesión en Cognito
+    localStorage.removeItem('user'); // Opcional: Limpia los datos del usuario en localStorage
+    localStorage.removeItem('token'); // Opcional: Limpia el token JWT si lo guardaste
+    console.log('Sesión cerrada exitosamente.');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    console.log('Error al cerrar sesión. Intenta nuevamente.');
+  }
+};
+
 function Login() {
   const [formData, setFormData] = useState({ correo: '', contrasenia: '' });
   const [message, setMessage] = useState('');
@@ -16,17 +33,41 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      //await handleLogout(); // Cierra sesión antes de iniciar sesión nuevamente
+      
+      // Paso 1: Verificar credenciales en la base de datos
       const response = await fetch('http://localhost:3000/api/iniciar_sesion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
+
       const data = await response.json();
       if (response.ok) {
         if (data && data[0].id_usuario) {
           localStorage.setItem('user', JSON.stringify(data[0]));
-          setMessage('Inicio de sesión exitoso');
-          setTimeout(() => navigate('/dashboard'), 1000);
+          setMessage('Credenciales verificadas -> Validando sesión...');
+          
+          // Paso 2: Iniciar sesión en Cognito
+          try {
+            const username = formData.correo.trim(); // Cognito lo toma como username
+            const password = formData.contrasenia;
+            const cognitoUser = await signIn({ username, password});
+            console.log('Usuario autenticado en Cognito:', cognitoUser);
+
+            // Obtener el token JWT
+            const { tokens } = await fetchAuthSession();
+            const idToken = tokens?.idToken?.toString();
+            localStorage.setItem('token',idToken);
+            //console.log('Token JWT:', idToken);
+
+            // Redirigir al dashboard
+            setMessage('Inicio de sesión exitoso.');
+            setTimeout(() => navigate('/dashboard'), 1000);
+          } catch (error) {
+            console.error('Error al iniciar sesión:', error);
+            setMessage('Error al iniciar sesión. Intenta nuevamente.');
+          }
         } else {
           setMessage('Credenciales incorrectas');
         }
@@ -35,7 +76,8 @@ function Login() {
       }
 
     } catch (error) {
-      setMessage(error.message);
+      console.error('Error al iniciar sesión en Cognito:', cognitoError);
+      setMessage('Error al iniciar sesión en Cognito. Verifica tus credenciales.');
     }
   };
 
@@ -50,7 +92,7 @@ function Login() {
           <input
             type="text"
             name="correo"
-            placeholder="Nombre de usuario"
+            placeholder="Ingresa el correo"
             value={formData.correo}
             onChange={handleChange}
             required
@@ -72,6 +114,7 @@ function Login() {
       </div>
     </div>
   );
+
 }
 
 export default Login;

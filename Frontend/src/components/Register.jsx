@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Register.css';
 import filesImage from '../Images/files.png';
+
+//cognito
+import { Amplify } from 'aws-amplify';
+import { signUp } from '@aws-amplify/auth';
+import { awsExports } from '../cognitoConfig';
+import '@aws-amplify/ui-react/styles.css';
+
+Amplify.configure(awsExports);
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -25,31 +33,92 @@ function Register() {
     }
   };
   
+  const isPasswordValid = (password) => {
+    // Lista de caracteres especiales permitidos
+    const specialChars = `^$*.[]{}()?"!@#%&/\\,><':;|_~\`+=-`;
+  
+    // Requisitos básicos
+    const hasMinLength = password.length >= 8;
+    const hasNumber = /\d/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasSpecialChar = new RegExp(`[${specialChars.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}]`).test(password);
+    
+    // Verifica si hay espacios iniciales o finales
+    const noLeadingOrTrailingSpaces = password === password.trim();
+  
+    // Si hay espacios internos, están permitidos (solo si no están al inicio o final)
+    return (
+      hasMinLength &&
+      hasNumber &&
+      hasLowercase &&
+      hasUppercase &&
+      hasSpecialChar &&
+      noLeadingOrTrailingSpaces
+    );
+  };
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formDataToSend = new FormData();
-    formDataToSend.append('nombre_usuario', formData.nombre_usuario);
-    formDataToSend.append('correo', formData.correo);
-    formDataToSend.append('contrasenia', formData.contrasenia);
-    if (formData.foto) {
-      formDataToSend.append('foto', formData.foto);
+
+    // Validar la contraseña
+    if (!isPasswordValid(formData.contrasenia)) {
+      let msg = `Requisitos:
+
+8: longitud mínima de caracteres
+Contiene al menos 1 número
+Contiene al menos una letra minúscula
+Contiene al menos una letra mayúscula
+Contiene al menos 1 carácter especial del siguiente conjunto o un carácter de espacio que no es inicial ni final.
+^ $ * . [ ] { } ( ) ? - " ! @ # % & / \ , > < ' : ; | _ ~  + =`;
+      setMessage(msg);
+      return;
     }
-    try {
+
+    try{
+      //Primero se registra el usuario en la base de datos
+      const formDataToSend = new FormData();
+      formDataToSend.append('nombre_usuario', formData.nombre_usuario);
+      formDataToSend.append('correo', formData.correo);
+      formDataToSend.append('contrasenia', formData.contrasenia);
+      if (formData.foto) {
+        formDataToSend.append('foto', formData.foto);
+      }
+      
       const response = await fetch('http://localhost:3000/api/registrar_usuario', {
         method: 'POST',
         body: formDataToSend,
       });
+
       const data = await response.json();
-      if (response.ok) {
-        setMessage('Registro exitoso');
-        setTimeout(() => navigate('/login'), 2000);
-      } else {
-        setMessage(data.error || 'Error al registrar usuario');
+      if (!response.ok) {
+        setMessage(data.error || 'Error al registrar usuario en la base de datos');
+        return; // Detiene la ejecución, NO registra en Cognito
       }
-    } catch (error) {
-      setMessage(error.message);
-    }
-  };
+
+      // Si el registro en la base de datos fue exitoso, registramos en Cognito
+      const { isSignUpComplete, userId, nextStep } = await signUp({
+        username: formData.correo, // Cognito usa el correo como username
+        password: formData.contrasenia,
+        options: {
+          userAttributes: {
+            email: formData.correo, // Campo obligatorio en Cognito
+          },
+          autoSignIn: false, // Inicia sesión automáticamente después del registro
+        },
+      });
+      console.log('Usuario registrado en Cognito');
+
+      // Mostrar mensaje y redirigir
+      setMessage('Registro exitoso. Ahora puedes iniciar sesión.');
+      setTimeout(() => navigate('/login'), 2000);
+
+      }catch (error) {
+        console.error('Error durante el registro:', error);
+        setMessage(error.message || 'Error al registrar usuario');
+      }
+    };
   
   return (
     <div className="register-container">
