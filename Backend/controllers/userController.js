@@ -300,3 +300,49 @@ export const extraerDatosArchivo = async (req, res) => {
       }
     });
   };
+
+export const actualizarUser = async (req, res) => { 
+    try {
+        const {nombre_usuario} = req.body;
+        const { id_usuario } = req.params;
+        const foto = req.file;
+        let url_foto = null;
+        if (foto) {
+        
+            const base64Content = foto.buffer.toString('base64');
+            
+            const response = await fetch('https://4d7varhp9c.execute-api.us-east-1.amazonaws.com/UploadImageP1', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: foto.originalname,
+                    fileContent: base64Content
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Error al subir la imagen al Lambda');
+            }
+            
+            const data = await response.json();
+            console.log(data)
+            url_foto = data.fileUrl; // se usa el campo "fileUrl"
+        }
+        
+        const query = `CALL sp_actualizarUser(?, ?, ?)`;
+        connectionDB.query(query, [nombre_usuario, url_foto, id_usuario], (err) => {
+            if (err) {
+                // Manejar errores de duplicados
+                if (err.code === 'ER_DUP_ENTRY') {
+                    const field = err.sqlMessage.includes('correo') ? 'correo' : 'nombre_usuario';
+                    return res.status(400).json({ error: `El ${field} ya está registrado. Por favor, usa otro.` });
+                }
+                return res.status(500).json({ error: err.message });
+            }
+            res.status(201).json({ mensaje: 'Usuario registrado exitosamente', url_foto });
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+

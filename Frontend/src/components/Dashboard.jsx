@@ -91,6 +91,13 @@ function Dashboard() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState("");
 
+  // Estado para actualizar perfil
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [updatedProfile, setUpdatedProfile] = useState({
+    nombre_usuario: "",
+    foto: null,
+  });
+
   // Estado de secciones
   const [sections, setSections] = useState([]);
   const [activeSectionId, setActiveSectionId] = useState(null);
@@ -149,6 +156,7 @@ function Dashboard() {
 
     // Cargar secciones del usuario
     obtenerSecciones(parsedUser.id_usuario);
+    setUpdatedProfile({ nombre_usuario: parsedUser.nombre_usuario });
     setLoading(false);
   }, [navigate]);
 
@@ -160,6 +168,77 @@ function Dashboard() {
       setFiles([]);
     }
   }, [activeSectionId]);
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setUpdatedProfile({ ...updatedProfile, [name]: value });
+  };
+
+  const handleProfileFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUpdatedProfile({ ...updatedProfile, foto: file });
+    }
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!updatedProfile.nombre_usuario) {
+      setError("El nombre de usuario no puede estar vacío.");
+      return;
+    }
+
+    // Obtener el usuario actual desde localStorage
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+
+    // Crear un objeto para almacenar solo los campos que cambiaron
+    const updatedFields = {};
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("nombre_usuario", updatedProfile.nombre_usuario);
+    
+    if (updatedProfile.nombre_usuario !== currentUser.nombre_usuario) {
+      updatedFields.nombre_usuario = updatedProfile.nombre_usuario;
+    }
+    
+    if (updatedProfile.foto) {
+      formDataToSend.append("foto", updatedProfile.foto);
+      updatedFields.url_foto = updatedProfile.foto; // Solo incluir la foto si se seleccionó una nueva
+    }
+
+    // Si no hay cambios, no enviar la solicitud
+    if (Object.keys(updatedFields).length === 0) {
+      setNewMessage("No se realizaron cambios en el perfil.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/actualizar_perfil/${user.id_usuario}`, {
+        method: "POST",
+        body: formDataToSend,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setNewMessage(data.error || 'Error al actualizar usuario en la base de datos');
+        return;
+      }
+      
+      // Actualizar el usuario en localStorage con los cambios
+      updatedFields.url_foto = data.url_foto;
+      const updatedUser = { ...currentUser, ...updatedFields };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+
+      setNewMessage("Usuario actualizado exitosamente.");
+      setTimeout(() => setNewMessage(""), 3000);
+      setIsProfileModalOpen(false);
+    } catch (error) {
+      setError(error.message);
+      setTimeout(() => setError(""), 3000);
+    }
+  };
 
   // Reemplazar fetchSections para usar GET desde la API y filtrar por usuario
   const obtenerSecciones = async (idUsuario) => {
@@ -477,6 +556,12 @@ function Dashboard() {
               <span>{user.nombre_usuario}</span>
             </div>
           )}
+          <button
+            className="update-profile-button"
+            onClick={() => setIsProfileModalOpen(true)}
+          >
+            Actualizar Perfil
+          </button>
           <button
             className="add-sections-button"
             onClick={() => setIsSectionModalOpen(true)}
@@ -817,6 +902,53 @@ function Dashboard() {
             </button>
           </div>
         </div>
+      </Modal>
+
+     {/* Modal para actualizar perfil */}
+     <Modal
+        isOpen={isProfileModalOpen}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setError(null);
+        }}
+        title="Actualizar Perfil"
+      >
+        <form onSubmit={handleProfileSubmit} className="profile-form">
+          <div className="form-group">
+            <label htmlFor="nombre_usuario">Nombre de Usuario</label>
+            <input
+              id="nombre_usuario"
+              type="text"
+              name="nombre_usuario"
+              value={updatedProfile.nombre_usuario}
+              onChange={handleProfileChange}
+              placeholder="Nuevo nombre de usuario"
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="foto">Foto de Perfil</label>
+            <input
+              id="foto"
+              type="file"
+              name="foto"
+              accept=".jpg,.jpeg,.png"
+              onChange={handleProfileFileChange}
+            />
+          </div>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={() => setIsProfileModalOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="submit-button">
+              Actualizar
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* Chatbot */}

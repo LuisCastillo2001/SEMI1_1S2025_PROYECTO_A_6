@@ -40,3 +40,30 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE sp_actualizarUser(
+    IN p_nombre_usuario VARCHAR(100),
+    IN p_url_foto TEXT,
+    IN p_id_usuario INT
+)
+BEGIN
+    -- Si se envía una nueva URL de foto (no NULL), se actualiza todo
+    IF p_url_foto IS NOT NULL THEN
+        UPDATE usuarios
+        SET nombre_usuario = p_nombre_usuario,
+            url_foto = p_url_foto
+        WHERE id_usuario = p_id_usuario;
+    ELSE
+        -- Solo se actualiza el nombre de usuario
+        UPDATE usuarios
+        SET nombre_usuario = p_nombre_usuario
+        WHERE id_usuario = p_id_usuario;
+    END IF;
+END $$
+
+DELIMITER ;
+
+
+
