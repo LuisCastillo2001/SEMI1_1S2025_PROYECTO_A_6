@@ -1076,3 +1076,18 @@
 .delete-section-button:hover {
   background-color: darkred;
 }
+
+.search-bar {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: left;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}

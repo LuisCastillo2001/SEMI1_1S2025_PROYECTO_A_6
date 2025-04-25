@@ -98,6 +98,8 @@ function Dashboard() {
     foto: null,
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   // Estado de secciones
   const [sections, setSections] = useState([]);
   const [activeSectionId, setActiveSectionId] = useState(null);
@@ -566,7 +568,9 @@ function Dashboard() {
     
   };
 
-  
+  const filteredFiles = files.filter((file) =>
+    file.nombre_archivo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading && !user) {
     return <div className="loading">Cargando...</div>;
@@ -688,6 +692,17 @@ function Dashboard() {
         {success && <div className="success-message">{success}</div>}
         {error && <div className="error-message">{error}</div>}
 
+        <div className="search-bar">
+  <input
+    type="text"
+    placeholder="Buscar archivos en esta sección"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="search-input"
+  />
+</div>
+
+
         <div className="content-body">
           {files.length === 0 ? (
             <div className="empty-state">
@@ -702,7 +717,7 @@ function Dashboard() {
             </div>
           ) : (
             <div className="file-grid">
-              {files.map((file) => (
+              {filteredFiles.map((file) => (
                 <div key={file.id_archivo} className="file-card">
                   <div className="file-card-header">
                     <h4>{file.nombre_archivo}</h4>
