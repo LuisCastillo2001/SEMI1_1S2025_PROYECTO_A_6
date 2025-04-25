@@ -125,7 +125,7 @@
 /* Sidebar navigation */
 .sidebar-nav {
   flex-grow: 0;
-  padding: 10px;
+  padding: 50px;
   display: flex;
   flex-direction: row;
   overflow-x: auto;
@@ -1062,4 +1062,17 @@
   color: #4caf50;
   animation: fadeInOut 3s ease;
   text-align: center;
+}
+
+.delete-section-button {
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.delete-section-button:hover {
+  background-color: darkred;
 }

@@ -346,3 +346,20 @@ export const actualizarUser = async (req, res) => {
     }
 };
 
+export const deleteSection = async (req, res) => {
+    const { id_seccion } = req.params;
+    const sql = "CALL sp_eliminarSeccion(?)";
+    connectionDB.query(sql, [id_seccion], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: "Sección eliminada exitosamente", results });
+    });
+}
+
+export const deleteFile = async (req, res) => { 
+    const { id_archivo } = req.params;
+    const sql = "CALL sp_eliminarArchivo(?)";
+    connectionDB.query(sql, [id_archivo], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ mensaje: "Archivo eliminado exitosamente", results });
+    });
+}

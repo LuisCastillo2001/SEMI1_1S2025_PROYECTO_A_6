@@ -382,11 +382,50 @@ function Dashboard() {
   };
 
   const handleDeleteSection = async (sectionId) => {
-    setError("La funcionalidad para eliminar secciones no está disponible.");
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta sección?')) {
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:3000/api/eliminar_seccion/${sectionId}`, {
+        method: 'POST',
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al eliminar la sección');
+      }
+  
+      setSections(sections.filter((section) => section.id_seccion !== sectionId));
+      setActiveSectionId(null); // Limpia la sección activa si se elimina
+      setSuccess('Sección eliminada exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message);
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const handleDeleteFile = async (fileId) => {
-    setError("La funcionalidad para eliminar archivos no está disponible.");
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este archivo?')) {
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:3000/api/eliminar_archivo/${fileId}`, {
+        method: 'POST',
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al eliminar el archivo');
+      }
+  
+      setFiles(files.filter((file) => file.id_archivo !== fileId));
+      setSuccess('Archivo eliminado exitosamente');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      setError(error.message);
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const handleViewFile = (file) => {
@@ -527,6 +566,8 @@ function Dashboard() {
     
   };
 
+  
+
   if (loading && !user) {
     return <div className="loading">Cargando...</div>;
   }
@@ -581,16 +622,23 @@ function Dashboard() {
             </div>
           ) : (
             sections.map((section) => (
-              <button
-                key={section.id_seccion}
-                className={`nav-item ${
-                  activeSectionId === section.id_seccion ? "active" : ""
-                }`}
-                onClick={() => setActiveSectionId(section.id_seccion)}
-              >
-                <SectionIcon />
-                <span className="section-name">{section.titulo_seccion}</span>
-              </button>
+              <div key={section.id_seccion} className="section-item">
+    <button
+      className={`nav-item ${
+        activeSectionId === section.id_seccion ? 'active' : ''
+      }`}
+      onClick={() => setActiveSectionId(section.id_seccion)}
+    >
+      <SectionIcon />
+      <span className="section-name">{section.titulo_seccion}</span>
+    </button>
+    <button
+      className="delete-section-button"
+      onClick={() => handleDeleteSection(section.id_seccion)}
+    >
+      Eliminar
+    </button>
+  </div>
             ))
           )}
         </nav>
@@ -682,6 +730,9 @@ function Dashboard() {
                     >
                       Ver archivo
                     </button>
+                    <button className="delete-button" onClick={() => handleDeleteFile(file.id_archivo)}>
+    Eliminar
+  </button>
                   </div>
                 </div>
               ))}

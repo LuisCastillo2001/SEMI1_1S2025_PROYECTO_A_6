@@ -13,7 +13,9 @@ import {
   upload,
   translateText,
   extraerDatosArchivo,
-  actualizarUser
+  actualizarUser,
+  deleteSection,
+  deleteFile
 } from '../controllers/userController.js';
 
 const router = Router();
@@ -31,4 +33,6 @@ router.get('/ver_pdf/:id_archivo', visualizarPDF);
 router.post('/translate', translateText);
 router.get('/extraer_datos_archivo/:id_archivo', extraerDatosArchivo);
 router.post('/actualizar_perfil/:id_usuario',upload.single('foto'),actualizarUser);
+router.post('/eliminar_seccion/:id_seccion',deleteSection);
+router.post('/eliminar_archivo/:id_archivo',deleteFile);
 export default router;

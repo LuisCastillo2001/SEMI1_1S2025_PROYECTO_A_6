@@ -23,3 +23,25 @@ END$$
 
 DELIMITER ;
 
+DELIMITER $$
+
+CREATE PROCEDURE sp_eliminarSeccion(
+    IN p_id_seccion INT
+)
+BEGIN
+    DELETE FROM secciones WHERE id_seccion = p_id_seccion;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE sp_eliminarArchivo(
+    IN p_id_archivo INT
+)
+BEGIN
+    DELETE FROM archivos WHERE id_archivo = p_id_archivo;
+END $$
+
+DELIMITER ;
+
