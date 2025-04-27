@@ -130,12 +130,14 @@ export const registrarArchivo = async (req, res) => {
         if (req.file) {
             if (tipo === 'Imagen') {
                 const base64Content = req.file.buffer.toString('base64');
+                console.log(req.file.mimetype)
                 const response = await fetch('https://4d7varhp9c.execute-api.us-east-1.amazonaws.com/UploadImageP1', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         fileName: req.file.originalname,
-                        fileContent: base64Content
+                        fileContent: base64Content,
+                        tipo: req.file.mimetype
                     })
                 });
                 if (!response.ok) throw new Error('Error al subir la imagen al Lambda');
