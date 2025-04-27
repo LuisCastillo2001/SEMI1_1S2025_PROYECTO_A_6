@@ -50,17 +50,17 @@ function Login() {
           
           // Paso 2: Iniciar sesión en Cognito
           try {
-            const username = formData.correo.trim(); // Cognito lo toma como username
-            const password = formData.contrasenia;
-            const cognitoUser = await signIn({ username, password});
-            console.log('Usuario autenticado en Cognito:', cognitoUser);
+            // const username = formData.correo.trim(); // Cognito lo toma como username
+            // const password = formData.contrasenia;
+            // const cognitoUser = await signIn({ username, password});
+            // console.log('Usuario autenticado en Cognito:', cognitoUser);
 
-            // Obtener el token JWT
-            const { tokens } = await fetchAuthSession();
-            const idToken = tokens?.idToken?.toString();
-            localStorage.setItem('token',idToken);
-            //console.log('Token JWT:', idToken);
-
+            // // Obtener el token JWT
+            // const { tokens } = await fetchAuthSession();
+            // const idToken = tokens?.idToken?.toString();
+            // localStorage.setItem('token',idToken);
+            // //console.log('Token JWT:', idToken);
+//descomentar
             // Redirigir al dashboard
             setMessage('Inicio de sesión exitoso.');
             setTimeout(() => navigate('/dashboard'), 1000);

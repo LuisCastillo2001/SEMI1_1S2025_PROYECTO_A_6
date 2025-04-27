@@ -148,10 +148,10 @@ function Dashboard() {
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
 
-    if (!userData || !token) {
-      navigate("/login");
-      return;
-    }
+    // if (!userData || !token) {
+    //   navigate("/login");
+    //   return;
+    // }descomentar
 
     const parsedUser = JSON.parse(userData);
     setUser(parsedUser);

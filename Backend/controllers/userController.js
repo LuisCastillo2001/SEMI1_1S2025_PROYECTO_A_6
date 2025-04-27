@@ -5,6 +5,8 @@ import connectionDB from '../DB/dbconnection.js';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import { RekognitionClient, DetectTextCommand } from '@aws-sdk/client-rekognition'; 
+import { TextractClient, StartDocumentTextDetectionCommand, GetDocumentTextDetectionCommand } from "@aws-sdk/client-textract";//pdf aws extracter
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +34,16 @@ const rekognition = new RekognitionClient({
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // Usar la variable de entorno para el secret key
     }
   });
+
+// Configuracion para el cliente de Textract
+const textract = new TextractClient({ 
+    region: process.env.AWS_REGION ,
+    credentials: {
+        accessKeyId: process.env.WALTER_ACCESS_KEY_ID,
+        secretAccessKey: process.env.WALTER_SECRET_ACCESS_KEY,
+    }
+}); 
+
 
 // Registrar usuario
 export const registrarUsuario = async (req, res) => {
@@ -131,12 +143,15 @@ export const registrarArchivo = async (req, res) => {
                 url_archivo = data.fileUrl;
             } else if (tipo === 'PDF') {
                 const base64Content = req.file.buffer.toString('base64');
+                console.log(req.file.mimetype)
                 const response = await fetch('https://4d7varhp9c.execute-api.us-east-1.amazonaws.com/uploadFileP1', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    
                     body: JSON.stringify({
                         fileName: req.file.originalname,
-                        fileContent: base64Content
+                        fileContent: base64Content,
+                        tipo: req.file.mimetype
                     })
                 });
                 if (!response.ok) throw new Error('Error al subir el PDF al Lambda');
@@ -248,59 +263,137 @@ export const extraerDatosArchivo = async (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
   
       const archivo = results[0][0];
-      if (!archivo || !archivo.url_archivo || archivo.tipo.toLowerCase() !== 'imagen') {
-        return res.status(400).json({ error: 'El archivo no existe, no es una imagen o no tiene URL' });
+      if (!archivo || !archivo.url_archivo || !archivo.tipo) {
+        return res.status(400).json({ error: 'El archivo no existe, no tiene URL o tipo definido' });
       }
   
+      const tipoArchivo = archivo.tipo.toLowerCase();
       const url = archivo.url_archivo;
-      const match = url.match(/^https?:\/\/([^.]+)\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com\/(.+)$/);
-      if (!match) {
-        return res.status(400).json({ error: 'No se pudo extraer bucket y key de la URL' });
-      }
   
-      const bucket = match[1];
-      const key = decodeURIComponent(match[2]);
-  
-      const params = {
-        Image: {
-          S3Object: {
-            Bucket: bucket,
-            Name: key
-          }
+      if (tipoArchivo === 'imagen') {
+        const match = url.match(/^https?:\/\/([^.]+)\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com\/(.+)$/);
+        if (!match) {
+          return res.status(400).json({ error: 'No se pudo extraer bucket y key de la URL' });
         }
-      };
   
-      try {
-        // Crear el comando de DetectText
-        const command = new DetectTextCommand(params);
-        const data = await rekognition.send(command); // Esperar la respuesta de Rekognition
+        const bucket = match[1];
+        const key = decodeURIComponent(match[2]);
   
-        const textoDetectado = data.TextDetections
-          .filter(item => item.Type === 'LINE')
-          .map(item => item.DetectedText)
-          .join('\n');
-  
-        // Llamar al procedimiento almacenado para guardar el texto extraído
-        const updateSql = "CALL sp_registrar_archivo_escaneado(?, ?)";
-        connectionDB.query(updateSql, [id_archivo, textoDetectado], (updateErr, updateResults) => {
-          if (updateErr) {
-            return res.status(500).json({ error: 'Error al actualizar el texto en la base de datos', detail: updateErr.message });
+        const params = {
+          Image: {
+            S3Object: {
+              Bucket: bucket,
+              Name: key
+            }
           }
+        };
   
-          // Responder con los datos actualizados
-          res.json({
-            mensaje: 'Texto extraído y almacenado correctamente',
-            texto_extraido: textoDetectado
+        try {
+          const command = new DetectTextCommand(params);
+          const data = await rekognition.send(command);
+  
+          const textoDetectado = data.TextDetections
+            .filter(item => item.Type === 'LINE')
+            .map(item => item.DetectedText)
+            .join('\n');
+  
+          const updateSql = "CALL sp_registrar_archivo_escaneado(?, ?)";
+          connectionDB.query(updateSql, [id_archivo, textoDetectado], (updateErr, updateResults) => {
+            if (updateErr) {
+              return res.status(500).json({ error: 'Error al actualizar el texto en la base de datos', detail: updateErr.message });
+            }
+  
+            res.json({
+              mensaje: 'Texto extraído y almacenado correctamente',
+              texto_extraido: textoDetectado
+            });
           });
-        });
   
-      } catch (rekogErr) {
-        console.error("Error con Rekognition:", rekogErr);
-        return res.status(500).json({ error: 'Error al detectar texto con Rekognition' });
+        } catch (rekogErr) {
+          console.error("Error con Rekognition:", rekogErr);
+          return res.status(500).json({ error: 'Error al detectar texto con Rekognition' });
+        }
+  
+      } else if (tipoArchivo === 'pdf') {
+        const match = url.match(/^https?:\/\/([^.]+)\.s3(?:[.-][a-z0-9-]+)?\.amazonaws\.com\/(.+)$/);
+        if (!match) {
+          return res.status(400).json({ error: 'No se pudo extraer bucket y key de la URL' });
+        }
+      
+        const bucket = match[1];
+        const key = decodeURIComponent(match[2]);
+      
+        try {
+          // 1. Iniciar el procesamiento del PDF
+          const startCommand = new StartDocumentTextDetectionCommand({
+            DocumentLocation: {
+              S3Object: {
+                Bucket: bucket,
+                Name: key
+              }
+            }
+          });
+      
+          const startResponse = await textract.send(startCommand);
+          const jobId = startResponse.JobId;
+      
+          // 2. Esperar a que Textract termine (simplemente hacemos un pequeño "polling" aquí)
+          let finished = false;
+          let maxTries = 10; // Máximo 10 intentos
+          let result;
+          while (!finished && maxTries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 5000)); // esperar 5 segundos
+      
+            const getCommand = new GetDocumentTextDetectionCommand({
+              JobId: jobId
+            });
+      
+            const getResponse = await textract.send(getCommand);
+      
+            if (getResponse.JobStatus === 'SUCCEEDED') {
+              finished = true;
+              result = getResponse;
+            } else if (getResponse.JobStatus === 'FAILED') {
+              return res.status(500).json({ error: 'Fallo al procesar el PDF con Textract' });
+            }
+      
+            maxTries--;
+          }
+      
+          if (!result) {
+            return res.status(500).json({ error: 'No se pudo obtener el resultado de Textract a tiempo' });
+          }
+      
+          // 3. Extraer el texto
+          const textoDetectado = result.Blocks
+            .filter(block => block.BlockType === 'LINE')
+            .map(block => block.Text)
+            .join('\n');
+      
+          // 4. Guardarlo en la base de datos
+          const updateSql = "CALL sp_registrar_archivo_escaneado(?, ?)";
+          connectionDB.query(updateSql, [id_archivo, textoDetectado], (updateErr, updateResults) => {
+            if (updateErr) {
+              return res.status(500).json({ error: 'Error al actualizar el texto en la base de datos', detail: updateErr.message });
+            }
+      
+            res.json({
+              mensaje: 'Texto extraído del PDF y almacenado correctamente',
+              texto_extraido: textoDetectado
+            });
+          });
+      
+        } catch (textractErr) {
+          console.error("Error con Textract:", textractErr);
+          return res.status(500).json({ error: 'Error al procesar el PDF con Textract' });
+        }
+      }else {
+        return res.status(400).json({ error: 'Tipo de archivo no soportado para extracción' });
       }
     });
   };
-
+  
+  
 export const actualizarUser = async (req, res) => { 
     try {
         const {nombre_usuario} = req.body;
